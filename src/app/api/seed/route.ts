@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { seedDatabase, getDemoAccounts, DEMO_USERS } from "@/lib/seed";
 import { db } from "@/db";
 import { users } from "@/db/schema";
@@ -6,7 +6,18 @@ import { count } from "drizzle-orm";
 
 const DEMO_EMAILS = new Set(DEMO_USERS.map((u) => u.email.toLowerCase()));
 
+// Demo seeding is a local development tool. In production this route does not
+// exist — it must never publish demo credentials on a public deployment.
+function blockedInProduction() {
+  return process.env.NODE_ENV === "production"
+    ? NextResponse.json({ error: "Not found" }, { status: 404 })
+    : null;
+}
+
 export async function POST() {
+  const blocked = blockedInProduction();
+  if (blocked) return blocked;
+
   try {
     // Guard: never wipe live accounts. Reseeding is only allowed when the
     // database is empty or contains demo accounts exclusively.
@@ -21,7 +32,6 @@ export async function POST() {
         { status: 409 }
       );
     }
-
     await seedDatabase();
     return NextResponse.json({ ok: true, accounts: await getDemoAccounts() });
   } catch (e) {
@@ -30,6 +40,9 @@ export async function POST() {
 }
 
 export async function GET() {
+  const blocked = blockedInProduction();
+  if (blocked) return blocked;
+
   const [row] = await db.select({ value: count() }).from(users);
   const n = row?.value ?? 0;
   return NextResponse.json({
