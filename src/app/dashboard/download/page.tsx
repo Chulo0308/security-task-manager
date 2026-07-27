@@ -7,7 +7,7 @@ const PLATFORMS = [
     name: "Android",
     icon: <Smartphone className="w-8 h-8" />,
     gradient: "from-emerald-500 to-green-600",
-    badge: "Google Play / PWA",
+    badge: "Add to Home screen",
     steps: [
       "Open the app in Chrome on your Android device",
       "Tap the ⋮ menu (top-right) → \"Add to Home screen\"",
@@ -19,7 +19,7 @@ const PLATFORMS = [
     name: "iOS",
     icon: <Apple className="w-8 h-8" />,
     gradient: "from-slate-700 to-slate-900",
-    badge: "App Store / PWA",
+    badge: "Add to Home screen",
     steps: [
       "Open the app in Safari on your iPhone or iPad",
       "Tap the Share button (square with an arrow)",
@@ -31,7 +31,7 @@ const PLATFORMS = [
     name: "Windows",
     icon: <Monitor className="w-8 h-8" />,
     gradient: "from-sky-500 to-blue-600",
-    badge: "Microsoft Store / PWA",
+    badge: "Install from browser",
     steps: [
       "Open the app in Microsoft Edge or Chrome",
       "Click the install icon (⊕) in the address bar",
@@ -79,12 +79,7 @@ export default function DownloadPage() {
                 ))}
               </ol>
               <a
-                href="/dashboard"
-                className={`mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-gradient-to-br ${p.gradient} px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:opacity-90`}
-              >
-                <Download className="w-4 h-4" />
-                Install for {p.name}
-              </a>
+                
             </div>
           </div>
         ))}

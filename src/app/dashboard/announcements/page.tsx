@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow, isPast } from "date-fns";
 import {
   Megaphone,
@@ -485,7 +485,20 @@ function AnnouncementCard({
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 3000);
   };
-  const [expanded, setExpanded] = useState(false);
+const [expanded, setExpanded] = useState(false);
+  const [clamped, setClamped] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (expanded) return;
+    const el = bodyRef.current;
+    if (!el) return;
+    const check = () => setClamped(el.scrollHeight > el.clientHeight + 1);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, [a.body, expanded]);
+
   const expired = a.expiresAt && isPast(new Date(a.expiresAt));
   const prioStyle = PRIORITIES.find((p) => p.value === a.priority) || PRIORITIES[0];
 
@@ -536,13 +549,15 @@ function AnnouncementCard({
                 {a.title}
               </h3>
               <div
+                              <div
+                ref={bodyRef}
                 className={`text-sm text-slate-700 whitespace-pre-wrap leading-relaxed ${
                   expanded ? "" : "line-clamp-3"
                 }`}
               >
                 {a.body}
               </div>
-              {a.body.length > 200 && (
+              {(clamped || expanded) && (
                 <button
                   onClick={() => setExpanded((e) => !e)}
                   className="text-xs text-indigo-600 font-medium mt-1 hover:text-indigo-700"
