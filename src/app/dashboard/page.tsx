@@ -65,6 +65,8 @@ export default function DashboardOverview() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [reminders, setReminders] = useState<any[]>([]);
+  const [site, setSite] = useState<any>(null);
+  const [floorCount, setFloorCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   const [error, setError] = useState<string | null>(null);
@@ -73,10 +75,11 @@ export default function DashboardOverview() {
     setLoading(true);
     setError(null);
     try {
-      const [tRes, aRes, rRes] = await Promise.all([
+            const [tRes, aRes, rRes, sRes] = await Promise.all([
         fetch("/api/tasks", { cache: "no-store" }),
         fetch("/api/announcements", { cache: "no-store" }),
         fetch("/api/reminders", { cache: "no-store" }),
+        fetch("/api/site", { cache: "no-store" }),
       ]);
       if (!tRes.ok || !aRes.ok) throw new Error("Failed to load data");
       const tData = await tRes.json();
@@ -85,6 +88,11 @@ export default function DashboardOverview() {
       setTasks(tData.tasks || []);
       setAnnouncements(aData.announcements || []);
       setReminders((rData.reminders || []).filter((r: any) => new Date(r.remindAt) > new Date()).slice(0, 5));
+      if (sRes.ok) {
+        const sData = await sRes.json();
+        setSite(sData.settings || null);
+        setFloorCount((sData.floors || []).length);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load data");
     } finally {
@@ -440,26 +448,26 @@ export default function DashboardOverview() {
                   Site Profile
                 </span>
               </div>
-              <h3 className="text-xl font-semibold mb-1">8 Bishopsgate</h3>
+              <h3 className="text-xl font-semibold mb-1">{site?.siteName || "8 Bishopsgate"}</h3>
               <p className="text-sm text-slate-300 mb-4">
-                58-storey commercial tower in the heart of the City of London.
+                {site?.notes || "Security operations command centre."}
               </p>
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <div className="text-slate-400">Location</div>
-                  <div className="text-white font-medium">Undershaft Road</div>
+                  <div className="text-white font-medium">{site?.addressLine1 || "—"}</div>
                 </div>
                 <div>
                   <div className="text-slate-400">Postcode</div>
-                  <div className="text-white font-medium">EC2N 4AY</div>
+                  <div className="text-white font-medium">{site?.postcode || "—"}</div>
                 </div>
                 <div>
                   <div className="text-slate-400">Floors</div>
-                  <div className="text-white font-medium">58 + 4 basement</div>
+                  <div className="text-white font-medium">{floorCount} floors</div>
                 </div>
                 <div>
                   <div className="text-slate-400">Security Tier</div>
-                  <div className="text-white font-medium">Enhanced</div>
+                  <div className="text-white font-medium">{site?.securityTier || "—"}</div>
                 </div>
               </div>
             </div>

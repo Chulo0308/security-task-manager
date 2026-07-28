@@ -80,6 +80,7 @@ export default function SitePage() {
         body: JSON.stringify(settings),
       });
       if (!res.ok) throw new Error();
+      await load();
       setToast("Site information saved");
     } catch {
       setToast("Failed to save");

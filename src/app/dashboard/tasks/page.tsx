@@ -123,6 +123,7 @@ const STATUS_STYLES: Record<string, { label: string; cls: string; dot: string }>
 
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [floors, setFloors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -139,10 +140,15 @@ export default function TasksPage() {
   const { isSupervisorOrAbove, isAdmin } = useRole();
   const users = useUsers();
 
-  const loadTasks = async () => {
+    const loadTasks = async () => {
     const res = await fetch("/api/tasks", { cache: "no-store" });
     const data = await res.json();
     setTasks(data.tasks || []);
+    const sRes = await fetch("/api/site", { cache: "no-store" });
+    if (sRes.ok) {
+      const sData = await sRes.json();
+      setFloors((sData.floors || []).map((f) => f.name));
+    }
     setLoading(false);
   };
 
@@ -579,6 +585,7 @@ export default function TasksPage() {
           editing={!!editingId}
           users={users}
           canAssign={isSupervisorOrAbove}
+          floors={floors}
         />
       )}
 
@@ -846,8 +853,9 @@ function TaskFormModal({
   onSubmit,
   onClose,
   editing,
-  users,
+users,
   canAssign,
+  floors,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
@@ -855,8 +863,9 @@ function TaskFormModal({
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
   editing: boolean;
-  users: { id: string; name: string; title: string; role: string }[];
+    users: { id: string; name: string; title: string; role: string }[];
   canAssign: boolean;
+  floors: string[];
 }) {
   const up = (k: keyof FormState, v: string) => setForm({ ...form, [k]: v });
   return (
@@ -960,7 +969,7 @@ function TaskFormModal({
                 className="mt-1.5 w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
               <datalist id="locations">
-                {LOCATIONS.map((l) => (
+                {floors.map((l) => (
                   <option key={l} value={l} />
                 ))}
               </datalist>

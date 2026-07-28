@@ -549,7 +549,6 @@ const [expanded, setExpanded] = useState(false);
                 {a.title}
               </h3>
               <div
-                              <div
                 ref={bodyRef}
                 className={`text-sm text-slate-700 whitespace-pre-wrap leading-relaxed ${
                   expanded ? "" : "line-clamp-3"
