@@ -84,7 +84,7 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
         {/* Header */}
         <div className="p-5 border-b border-white/5 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center shadow-lg shadow-indigo-900/40">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#F64F0C] to-[#ff6a2b] flex items-center justify-center shadow-lg shadow-orange-900/40">
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
@@ -137,16 +137,16 @@ function Sidebar({ open, onClose }: { open: boolean; onClose: () => void }) {
                       group flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors
                       ${
                         active
-                          ? "bg-gradient-to-r from-indigo-500/20 to-sky-500/10 text-white border border-indigo-500/20"
+                          ? "bg-gradient-to-r from-[#F64F0C]/20 to-[#F64F0C]/5 text-white border border-[#F64F0C]/30"
                           : "text-slate-400 hover:text-white hover:bg-white/5"
                       }
                     `}
                   >
-                    <span className={active ? "text-indigo-300" : "text-slate-500 group-hover:text-slate-300"}>
+                    <span className={active ? "text-[#F64F0C]" : "text-slate-500 group-hover:text-slate-300"}>
                       {item.icon}
                     </span>
                     <span className="flex-1 font-medium">{item.label}</span>
-                    {active && <ChevronRight className="w-4 h-4 text-indigo-400" />}
+                    {active && <ChevronRight className="w-4 h-4 text-[#F64F0C]" />}
                   </Link>
                 </li>
               );

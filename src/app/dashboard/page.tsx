@@ -492,7 +492,7 @@ function StatCard({
   description: string;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow">
+    <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
       <div className="flex items-start justify-between">
         <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${accent} flex items-center justify-center text-white shadow-md`}>
           {icon}
