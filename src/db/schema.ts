@@ -175,6 +175,23 @@ export const taskSeen = pgTable(
     index("task_seen_user_idx").on(t.userId),
   ]
 );
+export const taskAssignees = pgTable(
+  "task_assignees",
+  {
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => tasks.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    assignedAt: timestamp("assigned_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.taskId, t.userId] }),
+    index("task_assignees_task_idx").on(t.taskId),
+    index("task_assignees_user_idx").on(t.userId),
+  ]
+);
 
 export const announcementSeen = pgTable(
   "announcement_seen",

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { attachments, reminders, tasks, taskSeen, users } from "@/db/schema";
+import { attachments, reminders, tasks, taskSeen, taskAssignees, users } from "@/db/schema";
 import { eq, desc, asc, and, inArray, or, sql, ilike } from "drizzle-orm";
 import { getSession, isSupervisorOrAbove } from "@/lib/auth";
 
@@ -45,6 +45,17 @@ export async function GET(req: NextRequest) {
   if (overdue) {
     conditions.push(sql`${tasks.dueAt} < ${new Date()}`);
     conditions.push(eq(tasks.status, "open"));
+  }
+  // Visibility: admins see everything; everyone else sees only tasks they
+  // created or are assigned to (via legacy assignedTo OR the assignees table).
+  if (session.role !== "admin") {
+    conditions.push(
+      or(
+        eq(tasks.createdBy, session.id),
+        eq(tasks.assignedTo, session.id),
+        sql`exists (select 1 from ${taskAssignees} where ${taskAssignees.taskId} = ${tasks.id} and ${taskAssignees.userId} = ${session.id})`
+      )
+    );
   }
 
   const rows = await db
