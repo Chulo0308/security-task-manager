@@ -99,11 +99,11 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-slate-950 text-slate-100">
       {/* Left panel – branding */}
-      <div className="relative lg:w-[45%] flex flex-col justify-between p-8 lg:p-12 bg-gradient-to-br from-slate-900 via-slate-950 to-indigo-950 overflow-hidden">
-        <div className="absolute inset-0 opacity-20 pointer-events-none"
+      <div className="relative lg:w-[45%] flex flex-col justify-between p-8 lg:p-12 brand-hero overflow-hidden">
+        <div className="absolute inset-0 opacity-30 pointer-events-none"
              style={{
                backgroundImage:
-                 "radial-gradient(circle at 20% 30%, rgba(99,102,241,0.4) 0, transparent 40%), radial-gradient(circle at 80% 70%, rgba(14,165,233,0.3) 0, transparent 40%)"
+                 "radial-gradient(circle at 20% 30%, rgba(246,79,12,0.35) 0, transparent 42%), radial-gradient(circle at 80% 70%, rgba(246,79,12,0.18) 0, transparent 45%)"
              }} />
         <div className="relative z-10 flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 flex items-center justify-center shadow-lg shadow-indigo-900/50">
@@ -118,7 +118,7 @@ function LoginForm() {
         <div className="relative z-10 max-w-lg">
           <h1 className="text-4xl lg:text-5xl font-semibold leading-tight mb-4">
             Security Operations<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-sky-400">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#F64F0C] to-[#ff6a2b]">
               Command Centre
             </span>
           </h1>
@@ -190,7 +190,7 @@ function LoginForm() {
             <button
               type="submit"
               disabled={submitting}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-lg font-medium text-sm hover:bg-slate-800 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+              className="btn-brand sheen-wrap w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
               Sign in to {next === "/dashboard" ? "Command Centre" : "your workspace"}

@@ -1,1 +1,74 @@
-@import "tailwindcss";
+﻿@import "tailwindcss";
+
+@theme {
+  --color-brand-navy: #1F3864;
+  --color-brand-navy-deep: #14264a;
+  --color-brand-navy-soft: #2a4a80;
+  --color-brand-orange: #F64F0C;
+  --color-brand-orange-soft: #ff6a2b;
+}
+
+:root {
+  --navy: #1F3864;
+  --navy-deep: #14264a;
+  --navy-soft: #2a4a80;
+  --orange: #F64F0C;
+  --orange-soft: #ff6a2b;
+  --orange-glow: rgba(246, 79, 12, 0.45);
+  --ring-glow: 0 0 0 1px rgba(246, 79, 12, 0.25), 0 0 18px -2px rgba(246, 79, 12, 0.35);
+}
+
+@keyframes bg-drift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+@keyframes fade-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes soft-glow {
+  0%, 100% { box-shadow: 0 0 18px -6px var(--orange-glow); }
+  50%      { box-shadow: 0 0 26px -4px var(--orange-glow); }
+}
+@keyframes sheen {
+  0%   { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+.brand-hero {
+  background: linear-gradient(120deg, var(--navy-deep), var(--navy), var(--navy-soft), var(--navy-deep));
+  background-size: 300% 300%;
+  animation: bg-drift 18s ease-in-out infinite;
+}
+.animate-rise { animation: fade-rise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-rise-slow { animation: fade-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+.btn-brand {
+  background: linear-gradient(135deg, var(--orange), var(--orange-soft));
+  color: #fff;
+  box-shadow: 0 4px 14px -4px var(--orange-glow);
+  transition: box-shadow 0.3s ease, transform 0.2s ease, filter 0.3s ease;
+}
+.btn-brand:hover { box-shadow: 0 0 22px -2px var(--orange-glow); filter: brightness(1.06); transform: translateY(-1px); }
+.btn-brand:active { transform: translateY(0); }
+
+.card-brand { transition: box-shadow 0.35s ease, transform 0.25s ease, border-color 0.35s ease; }
+.card-brand:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -12px rgba(20, 38, 74, 0.45); border-color: rgba(246, 79, 12, 0.35); }
+
+.glow-orange { animation: soft-glow 3.5s ease-in-out infinite; }
+
+.focus-brand:focus { outline: none; box-shadow: var(--ring-glow); }
+
+.sheen-wrap { position: relative; overflow: hidden; }
+.sheen-wrap::after {
+  content: ""; position: absolute; top: 0; left: 0; height: 100%; width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255,255,255,0.18), transparent);
+  transform: translateX(-120%);
+}
+.sheen-wrap:hover::after { animation: sheen 0.9s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-hero, .animate-rise, .animate-rise-slow, .glow-orange, .sheen-wrap::after { animation: none !important; }
+  .card-brand:hover, .btn-brand:hover { transform: none; }
+}
