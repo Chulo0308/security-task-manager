@@ -147,7 +147,7 @@ export default function TasksPage() {
     const sRes = await fetch("/api/site", { cache: "no-store" });
     if (sRes.ok) {
       const sData = await sRes.json();
-      setFloors((sData.floors || []).map((f) => f.name));
+      setFloors((sData.floors || []).map((f: any) => f.name));
     }
     setLoading(false);
   };

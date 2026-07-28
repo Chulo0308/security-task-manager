@@ -77,9 +77,7 @@ export default function DownloadPage() {
                     {s}
                   </li>
                 ))}
-              </ol>
-              <a
-                
+              </ol>                
             </div>
           </div>
         ))}
