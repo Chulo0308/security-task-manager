@@ -1,18 +1,15 @@
-{
+﻿{
   "name": "8 Bishopsgate Security Operations",
   "short_name": "8B SecOps",
   "description": "Task management, announcements and communications for the 8 Bishopsgate security team.",
   "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#1F3864",
+  "theme_color": "#1F3864",
   "orientation": "portrait",
   "icons": [
-    {
-      "src": "/icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
