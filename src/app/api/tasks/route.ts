@@ -127,6 +127,25 @@ export async function GET(req: NextRequest) {
         .where(and(eq(reminders.resourceType, "task"), inArray(reminders.resourceId, taskIds)))
         .orderBy(asc(reminders.remindAt))
     : [];
+  const assigneeRows = taskIds.length
+    ? await db
+        .select({
+          taskId: taskAssignees.taskId,
+          userId: taskAssignees.userId,
+          name: users.name,
+          title: users.title,
+          role: users.role,
+        })
+        .from(taskAssignees)
+        .innerJoin(users, eq(taskAssignees.userId, users.id))
+        .where(inArray(taskAssignees.taskId, taskIds))
+    : [];
+  const assigneesByTask = new Map<string, typeof assigneeRows>();
+  for (const a of assigneeRows) {
+    const cur = assigneesByTask.get(a.taskId) ?? [];
+    cur.push(a);
+    assigneesByTask.set(a.taskId, cur);
+  }
 
   const attachmentsByTask = new Map<string, typeof attachmentRows>();
   for (const a of attachmentRows) {
