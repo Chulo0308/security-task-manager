@@ -33,6 +33,12 @@ export async function GET(req: NextRequest) {
   const requesterIsAdmin = session.role === "admin";
   const requesterIsSupervisor = session.role === "supervisor";
 
+    // Contact-detail visibility:
+  //  - supervisors and admins see everyone's email + phone
+  //  - guards/operators see contact details ONLY for supervisors and admins
+  //    (senior staff they may need to reach), never for peer officers
+  const requesterIsPrivileged = requesterIsAdmin || requesterIsSupervisor;
+
   const mapped = rows.map((u) => {
     let lastSeenAt: string | null = null;
     if (requesterIsAdmin) lastSeenAt = u.lastSeenAt ? u.lastSeenAt.toISOString() : null;
@@ -41,7 +47,14 @@ export async function GET(req: NextRequest) {
     const online = lastSeenAt ? now - new Date(lastSeenAt).getTime() < ONLINE_WINDOW : false;
     const { lastSeenAt: _omit, ...rest } = u;
     void _omit;
-    return { ...rest, lastSeenAt, online };
+
+    // Decide whether this requester may see THIS person's contact details.
+    const targetIsSenior = u.role === "admin" || u.role === "supervisor";
+    const canSeeContact = requesterIsPrivileged || targetIsSenior;
+    const email = canSeeContact ? rest.email : null;
+    const phone = canSeeContact ? rest.phone : null;
+
+    return { ...rest, email, phone, lastSeenAt, online };
   });
 
   return NextResponse.json({ users: mapped });
