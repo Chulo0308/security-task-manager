@@ -167,6 +167,11 @@ export async function POST(req: NextRequest) {
   const title = String(body.title || "").trim();
   if (!title) return NextResponse.json({ error: "Title required" }, { status: 400 });
 
+  const assigneeIds: string[] = Array.isArray(body.assigneeIds)
+    ? body.assigneeIds.filter((id: unknown): id is string => typeof id === "string" && id.length > 0)
+    : [];
+  const primaryAssignee = body.assignedTo || assigneeIds[0] || null;
+
   const [row] = await db
     .insert(tasks)
     .values({
@@ -176,11 +181,20 @@ export async function POST(req: NextRequest) {
       status: body.status || "open",
       category: body.category || "general",
       location: body.location || null,
-      assignedTo: body.assignedTo || null,
+      assignedTo: primaryAssignee,
       createdBy: session.id,
       dueAt: body.dueAt ? new Date(body.dueAt) : null,
     })
     .returning();
+
+  // Save the full assignee list (many-to-many). Always include the primary.
+  const allAssignees = Array.from(new Set([primaryAssignee, ...assigneeIds].filter(Boolean))) as string[];
+  if (allAssignees.length) {
+    await db
+      .insert(taskAssignees)
+      .values(allAssignees.map((userId) => ({ taskId: row.id, userId })))
+      .onConflictDoNothing();
+  }
 
   return NextResponse.json({ task: row }, { status: 201 });
 }
