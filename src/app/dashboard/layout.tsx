@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode, useState } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import {
   Building2,
   LayoutDashboard,
@@ -194,7 +194,8 @@ function DashboardShell({ children }: { children: ReactNode }) {
           </div>
           <div className="w-8" />
         </div>
-        <main className="flex-1 min-w-0">{children}</main>
+<main className="flex-1 min-w-0">{children}</main>
+        <Watermark />
       </div>
     </div>
   );
@@ -205,5 +206,49 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     <AuthProvider>
       <DashboardShell>{children}</DashboardShell>
     </AuthProvider>
+  );
+}
+function Watermark() {
+  const { user } = useAuth();
+  const [stamp, setStamp] = useState(() => new Date().toLocaleString("en-GB"));
+  useEffect(() => {
+    const t = setInterval(() => setStamp(new Date().toLocaleString("en-GB")), 60000);
+    return () => clearInterval(t);
+  }, []);
+  if (!user) return null;
+  const label = `${user.name} · ${user.email} · ${stamp}`;
+  const tiles = Array.from({ length: 60 });
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 40,
+        pointerEvents: "none",
+        overflow: "hidden",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "80px 60px",
+        transform: "rotate(-30deg) scale(1.5)",
+        transformOrigin: "center",
+        opacity: 0.06,
+      }}
+    >
+      {tiles.map((_, i) => (
+        <span
+          key={i}
+          style={{
+            fontSize: "11px",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+            color: "#1F3864",
+            userSelect: "none",
+          }}
+        >
+          {label}
+        </span>
+      ))}
+    </div>
   );
 }
