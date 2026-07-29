@@ -48,8 +48,9 @@ type Task = {
   seenBy: SeenReceipt[];
   seenCount: number;
   seenByCurrentUser: boolean;
-  attachments: AttachmentMeta[];
+    attachments: AttachmentMeta[];
   reminders: ReminderItem[];
+  assignees?: { userId: string; name: string; title: string; role: string }[];
 };
 
 type FormState = {
@@ -59,7 +60,8 @@ type FormState = {
   status: string;
   category: string;
   location: string;
-  assignedTo: string;
+    assignedTo: string;
+  assigneeIds: string[];
   dueAt: string;
 };
 
@@ -71,6 +73,7 @@ const EMPTY_FORM: FormState = {
   category: "general",
   location: "",
   assignedTo: "",
+  assigneeIds: [],
   dueAt: "",
 };
 
@@ -305,7 +308,8 @@ export default function TasksPage() {
       status: t.status,
       category: t.category,
       location: t.location || "",
-      assignedTo: t.assignedTo || "",
+assignedTo: t.assignedTo || "",
+      assigneeIds: (t.assignees || []).map((a: any) => a.userId),
       dueAt: t.dueAt ? toDateTimeLocal(new Date(t.dueAt)) : "",
     });
     setFormOpen(true);
@@ -317,7 +321,8 @@ export default function TasksPage() {
     setSubmitting(true);
     const payload = {
       ...form,
-      assignedTo: form.assignedTo || null,
+      assignedTo: form.assigneeIds[0] || form.assignedTo || null,
+      assigneeIds: form.assigneeIds,
       dueAt: form.dueAt || null,
       location: form.location || null,
     };
@@ -979,19 +984,33 @@ users,
                 Assign to
                 {!canAssign && <span className="text-slate-400 normal-case ml-1">(supervisor only)</span>}
               </label>
-              <select
-                value={form.assignedTo}
-                onChange={(e) => up("assignedTo", e.target.value)}
-                disabled={!canAssign}
-                className="mt-1.5 w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-slate-50 disabled:text-slate-500"
-              >
-                <option value="">Unassigned</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.name} · {u.title}
-                  </option>
-                ))}
-              </select>
+              <div className="mt-1.5 max-h-44 overflow-y-auto border border-slate-200 rounded-lg divide-y divide-slate-100">
+                {users.map((u) => {
+                  const checked = form.assigneeIds.includes(u.id);
+                  return (
+                    <label
+                      key={u.id}
+                      className={`flex items-center gap-2 px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 ${
+                        !canAssign ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={!canAssign}
+                        onChange={() => {
+                          const next = checked
+                            ? form.assigneeIds.filter((id) => id !== u.id)
+                            : [...form.assigneeIds, u.id];
+                          setForm({ ...form, assigneeIds: next });
+                        }}
+                        className="accent-[#F64F0C]"
+                      />
+                      <span>{u.name} · {u.title}</span>
+                    </label>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
