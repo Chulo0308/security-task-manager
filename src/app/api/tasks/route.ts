@@ -159,6 +159,9 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!isSupervisorOrAbove(session)) {
+    return NextResponse.json({ error: "Only supervisors and admins can create tasks" }, { status: 403 });
+  }
 
   const body = await req.json();
   const title = String(body.title || "").trim();
