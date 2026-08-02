@@ -140,6 +140,7 @@ export async function GET(req: NextRequest) {
         .innerJoin(users, eq(taskAssignees.userId, users.id))
         .where(inArray(taskAssignees.taskId, taskIds))
     : [];
+  console.log("DEBUG assigneeRows count:", assigneeRows.length, "taskIds count:", taskIds.length);
   const assigneesByTask = new Map<string, typeof assigneeRows>();
   for (const a of assigneeRows) {
     const cur = assigneesByTask.get(a.taskId) ?? [];
@@ -170,6 +171,7 @@ export async function GET(req: NextRequest) {
         seenByCurrentUser: seenBy.some((receipt) => receipt.userId === session.id),
         attachments: attachmentsByTask.get(task.id) ?? [],
         reminders: remindersByTask.get(task.id) ?? [],
+        assignees: assigneesByTask.get(task.id) ?? [],
       };
     }),
   });

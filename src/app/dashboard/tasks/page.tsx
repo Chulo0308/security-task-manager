@@ -715,6 +715,7 @@ function TaskCard({
   const status = STATUS_STYLES[task.status] || STATUS_STYLES.open;
 
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="px-5 py-4 hover:bg-slate-50/60 transition-colors group">
@@ -736,7 +737,10 @@ function TaskCard({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <h3 className={`font-medium text-slate-900 ${task.status === "completed" ? "line-through text-slate-500" : ""}`}>
+<h3
+                  onClick={() => setExpanded((e) => !e)}
+                  className={`font-medium text-slate-900 cursor-pointer hover:text-[#F64F0C] ${task.status === "completed" ? "line-through text-slate-500" : ""}`}
+                >
                   {task.title}
                 </h3>
                 <span className={`text-[10px] uppercase tracking-wide font-bold px-1.5 py-0.5 rounded border ${PRIORITY_STYLES[task.priority]}`}>
@@ -755,8 +759,28 @@ function TaskCard({
                 )}
               </div>
 
-              {task.description && (
+{task.description && !expanded && (
                 <p className="text-sm text-slate-600 line-clamp-2 mb-2">{task.description}</p>
+              )}
+              {expanded && (
+                <div className="mb-2 mt-1 pl-3 border-l-2 border-[#F64F0C]/30 space-y-2">
+                  {task.description && (
+                    <p className="text-sm text-slate-700 whitespace-pre-wrap">{task.description}</p>
+                  )}
+                  {task.assignees && task.assignees.length > 0 && (
+                    <div>
+                      <div className="text-[11px] uppercase tracking-wide font-semibold text-slate-500 mb-1">Assigned to</div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {task.assignees.map((a) => (
+                          <span key={a.userId} className="inline-flex items-center gap-1 text-xs bg-slate-100 rounded px-2 py-0.5">
+                            <UserIcon className="w-3 h-3" />
+                            {a.name}{a.title ? ` · ${a.title}` : ""}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
