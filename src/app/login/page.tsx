@@ -25,6 +25,7 @@ function LoginForm() {
   const [showDemo, setShowDemo] = useState(true);
   const [mode, setMode] = useState<"loading" | "setup" | "login">("loading");
   const [siteName, setSiteName] = useState("8 Bishopsgate");
+  const [siteLocation, setSiteLocation] = useState("London · EC2N 4AY");
 
   useEffect(() => {
     // Determine whether this is a live deployment or needs first-run setup
@@ -51,7 +52,10 @@ function LoginForm() {
   useEffect(() => {
     fetch("/api/site/public")
       .then((r) => r.json())
-      .then((d) => { if (d.siteName) setSiteName(d.siteName); })
+      .then((d) => {
+        if (d.siteName) setSiteName(d.siteName);
+        if (d.postcode || d.city) setSiteLocation([d.city, d.postcode].filter(Boolean).join(" · "));
+      })
       .catch(() => {});
   }, []);
 
@@ -118,7 +122,7 @@ function LoginForm() {
           </div>
           <div>
 <div className="text-sm tracking-[0.2em] text-slate-400 font-medium">{siteName.toUpperCase()}</div>
-            <div className="text-xs text-slate-500">London · EC2N 4AY</div>
+                        <div className="text-xs text-slate-500">{siteLocation}</div>
           </div>
         </div>
 
