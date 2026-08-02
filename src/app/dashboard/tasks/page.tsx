@@ -764,12 +764,18 @@ function TaskCard({
                   <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
                   {status.label}
                 </span>
-                {task.assigneeName && (
+                {(task.assignees && task.assignees.length > 0) ? (
+                  <span className="inline-flex items-center gap-1">
+                    <UserIcon className="w-3 h-3" />
+                    {task.assignees[0].name}
+                    {task.assignees.length > 1 && ` +${task.assignees.length - 1} more`}
+                  </span>
+                ) : task.assigneeName ? (
                   <span className="inline-flex items-center gap-1">
                     <UserIcon className="w-3 h-3" />
                     {task.assigneeName}
                   </span>
-                )}
+                ) : null}
                 {task.location && (
                   <span className="inline-flex items-center gap-1">
                     <MapPin className="w-3 h-3" />
