@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth, useRole } from "@/components/AuthProvider";
 import { formatDistanceToNow } from "date-fns";
+import { refreshUsers } from "../tasks/users.hook";
 
 type User = {
   id: string;
@@ -144,6 +145,7 @@ export default function UsersPage() {
         });
         if (!res.ok) throw new Error();
         await load();
+        refreshUsers();
         flash("Team member updated", "success");
       } else {
         const res = await fetch("/api/users", {
@@ -156,6 +158,7 @@ export default function UsersPage() {
           throw new Error((d as any).error || "Failed");
         }
         await load();
+        refreshUsers();
         flash("Team member created", "success");
       }
       setFormOpen(false);
