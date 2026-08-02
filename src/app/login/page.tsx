@@ -24,6 +24,7 @@ function LoginForm() {
   const [demoAccounts, setDemoAccounts] = useState<DemoAccount[]>([]);
   const [showDemo, setShowDemo] = useState(true);
   const [mode, setMode] = useState<"loading" | "setup" | "login">("loading");
+  const [siteName, setSiteName] = useState("8 Bishopsgate");
 
   useEffect(() => {
     // Determine whether this is a live deployment or needs first-run setup
@@ -47,6 +48,12 @@ function LoginForm() {
   useEffect(() => {
     if (user) router.replace("/dashboard");
   }, [user, router]);
+  useEffect(() => {
+    fetch("/api/site/public")
+      .then((r) => r.json())
+      .then((d) => { if (d.siteName) setSiteName(d.siteName); })
+      .catch(() => {});
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +117,7 @@ function LoginForm() {
             <Building2 className="w-6 h-6 text-white" />
           </div>
           <div>
-            <div className="text-sm tracking-[0.2em] text-slate-400 font-medium">8 BISHOPSGATE</div>
+<div className="text-sm tracking-[0.2em] text-slate-400 font-medium">{siteName.toUpperCase()}</div>
             <div className="text-xs text-slate-500">London · EC2N 4AY</div>
           </div>
         </div>
