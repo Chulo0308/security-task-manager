@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { attachments, reminders, tasks, taskSeen, taskAssignees, users } from "@/db/schema";
 import { eq, desc, asc, and, inArray, or, sql, ilike } from "drizzle-orm";
 import { getSession, isSupervisorOrAbove } from "@/lib/auth";
+import { sendPushToUsers } from "@/lib/push";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -215,6 +216,16 @@ export async function POST(req: NextRequest) {
       .insert(taskAssignees)
       .values(allAssignees.map((userId) => ({ taskId: row.id, userId })))
       .onConflictDoNothing();
+
+    const recipients = allAssignees.filter((id) => id !== session.id);
+    if (recipients.length) {
+      sendPushToUsers(recipients, {
+        title: "New task assigned",
+        body: title,
+        url: "/dashboard/tasks",
+        tag: `task-${row.id}`,
+      }).catch(() => {});
+    }
   }
 
   return NextResponse.json({ task: row }, { status: 201 });
