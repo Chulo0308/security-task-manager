@@ -35,7 +35,8 @@ export async function sendPushToUsers(userIds: string[], payload: PushPayload) {
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
           data
         );
-      } catch (err: any) {
+} catch (err: any) {
+        console.error("Push send failed:", err?.statusCode, err?.body || err?.message || err);
         // 404/410 means the subscription is dead — remove it.
         if (err?.statusCode === 404 || err?.statusCode === 410) {
           await db.delete(pushSubscriptions).where(eq(pushSubscriptions.endpoint, s.endpoint));
