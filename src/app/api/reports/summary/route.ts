@@ -1,6 +1,6 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tasks, taskAssignees, users } from "@/db/schema";
+import { tasks, taskAssignees, users, announcements, announcementSeen } from "@/db/schema";
 import { and, gte, lte, inArray } from "drizzle-orm";
 import { getSession, isSupervisorOrAbove } from "@/lib/auth";
 
@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
   }
   const fromDate = new Date(from);
   const toDate = new Date(to);
+  const rangeFilterTasks = and(gte(tasks.createdAt, fromDate), lte(tasks.createdAt, toDate));
 
-  const rangeFilter = and(gte(tasks.createdAt, fromDate), lte(tasks.createdAt, toDate));
-  const allTasks = await db.select().from(tasks).where(rangeFilter);
+  const allTasks = await db.select().from(tasks).where(rangeFilterTasks);
 
   const byStatus: Record<string, number> = {};
   const byPriority: Record<string, number> = {};
@@ -95,6 +95,33 @@ export async function GET(req: NextRequest) {
     }))
     .sort((a, b) => b.completed - a.completed);
 
+  // --- Announcement stats ---
+  const rangeFilterAnn = and(gte(announcements.createdAt, fromDate), lte(announcements.createdAt, toDate));
+  const allAnnouncements = await db.select().from(announcements).where(rangeFilterAnn);
+
+  const annByPriority: Record<string, number> = {};
+  for (const a of allAnnouncements) {
+    annByPriority[a.priority] = (annByPriority[a.priority] || 0) + 1;
+  }
+
+  const annIds = allAnnouncements.map((a) => a.id);
+  const seenRows = annIds.length
+    ? await db.select().from(announcementSeen).where(inArray(announcementSeen.announcementId, annIds))
+    : [];
+  const seenByAnn = new Map<string, number>();
+  for (const s of seenRows) {
+    seenByAnn.set(s.announcementId, (seenByAnn.get(s.announcementId) || 0) + 1);
+  }
+  const totalUserCount = allUsers.length || 1;
+  const avgSeenRate =
+    allAnnouncements.length > 0
+      ? Math.round(
+          (allAnnouncements.reduce((sum, a) => sum + (seenByAnn.get(a.id) || 0), 0) /
+            (allAnnouncements.length * totalUserCount)) *
+            100
+        )
+      : 0;
+
   return NextResponse.json({
     range: { from, to },
     totalTasks: total,
@@ -104,5 +131,10 @@ export async function GET(req: NextRequest) {
     overdueCount,
     completionRate,
     officerActivity,
+    announcements: {
+      total: allAnnouncements.length,
+      byPriority: annByPriority,
+      avgSeenRatePercent: avgSeenRate,
+    },
   });
 }
