@@ -1,8 +1,11 @@
 ﻿import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { tasks, taskAssignees, users, announcements, announcementSeen } from "@/db/schema";
+import { tasks, taskAssignees, taskSeen, users, announcements, announcementSeen } from "@/db/schema";
 import { and, gte, lte, inArray } from "drizzle-orm";
 import { getSession, isSupervisorOrAbove } from "@/lib/auth";
+
+const PRIORITY_WEIGHT: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
+type SeenItem = { id: string; title: string; seenCount: number } | null;
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -40,7 +43,6 @@ export async function GET(req: NextRequest) {
   const total = allTasks.length;
   const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
 
-  // --- Officer activity ---
   const taskIds = allTasks.map((t) => t.id);
   const allUsers = await db.select({ id: users.id, name: users.name, title: users.title }).from(users);
 
@@ -57,6 +59,7 @@ export async function GET(req: NextRequest) {
     assigned: number;
     completed: number;
     responseTimes: number[];
+    weightedScore: number;
   };
   const officerStats = new Map<string, OfficerStat>();
 
@@ -68,12 +71,13 @@ export async function GET(req: NextRequest) {
 
     let stat = officerStats.get(a.userId);
     if (!stat) {
-      stat = { userId: a.userId, name: user.name, title: user.title, assigned: 0, completed: 0, responseTimes: [] };
+      stat = { userId: a.userId, name: user.name, title: user.title, assigned: 0, completed: 0, responseTimes: [], weightedScore: 0 };
       officerStats.set(a.userId, stat);
     }
     stat.assigned++;
     if (t.status === "completed") {
       stat.completed++;
+      stat.weightedScore += PRIORITY_WEIGHT[t.priority] || 1;
       if (t.completedAt && t.dueAt) {
         const diffDays = (t.completedAt.getTime() - t.dueAt.getTime()) / (1000 * 60 * 60 * 24);
         stat.responseTimes.push(diffDays);
@@ -95,7 +99,13 @@ export async function GET(req: NextRequest) {
     }))
     .sort((a, b) => b.completed - a.completed);
 
-  // --- Announcement stats ---
+  const weightedRank = Array.from(officerStats.values())
+    .filter((s) => s.completed > 0)
+    .map((s) => ({ userId: s.userId, name: s.name, title: s.title, completed: s.completed, weightedScore: s.weightedScore }))
+    .sort((a, b) => b.weightedScore - a.weightedScore);
+
+  const bestResponse = officerActivity.length > 0 && officerActivity[0].completed > 0 ? officerActivity[0] : null;
+
   const rangeFilterAnn = and(gte(announcements.createdAt, fromDate), lte(announcements.createdAt, toDate));
   const allAnnouncements = await db.select().from(announcements).where(rangeFilterAnn);
 
@@ -105,11 +115,11 @@ export async function GET(req: NextRequest) {
   }
 
   const annIds = allAnnouncements.map((a) => a.id);
-  const seenRows = annIds.length
+  const annSeenRows = annIds.length
     ? await db.select().from(announcementSeen).where(inArray(announcementSeen.announcementId, annIds))
     : [];
   const seenByAnn = new Map<string, number>();
-  for (const s of seenRows) {
+  for (const s of annSeenRows) {
     seenByAnn.set(s.announcementId, (seenByAnn.get(s.announcementId) || 0) + 1);
   }
   const totalUserCount = allUsers.length || 1;
@@ -122,6 +132,39 @@ export async function GET(req: NextRequest) {
         )
       : 0;
 
+  const taskSeenRows = taskIds.length
+    ? await db.select().from(taskSeen).where(inArray(taskSeen.taskId, taskIds))
+    : [];
+  const seenByTask = new Map<string, number>();
+  for (const s of taskSeenRows) {
+    seenByTask.set(s.taskId, (seenByTask.get(s.taskId) || 0) + 1);
+  }
+
+  let mostSeenTask: SeenItem = null;
+  for (const t of allTasks) {
+    const c = seenByTask.get(t.id) || 0;
+    if (c > 0 && (!mostSeenTask || c > mostSeenTask.seenCount)) {
+      mostSeenTask = { id: t.id, title: t.title, seenCount: c };
+    }
+  }
+
+  let mostSeenAnnouncement: SeenItem = null;
+  for (const a of allAnnouncements) {
+    const c = seenByAnn.get(a.id) || 0;
+    if (c > 0 && (!mostSeenAnnouncement || c > mostSeenAnnouncement.seenCount)) {
+      mostSeenAnnouncement = { id: a.id, title: a.title, seenCount: c };
+    }
+  }
+
+  const officerSeenActivity = allUsers
+    .map((u) => {
+      const tasksSeenCount = taskSeenRows.filter((s) => s.userId === u.id).length;
+      const annsSeenCount = annSeenRows.filter((s) => s.userId === u.id).length;
+      return { userId: u.id, name: u.name, title: u.title, tasksSeenCount, annsSeenCount, totalSeenCount: tasksSeenCount + annsSeenCount };
+    })
+    .filter((o) => o.totalSeenCount > 0)
+    .sort((a, b) => b.totalSeenCount - a.totalSeenCount);
+
   return NextResponse.json({
     range: { from, to },
     totalTasks: total,
@@ -131,10 +174,15 @@ export async function GET(req: NextRequest) {
     overdueCount,
     completionRate,
     officerActivity,
+    weightedRank,
+    bestResponse,
     announcements: {
       total: allAnnouncements.length,
       byPriority: annByPriority,
       avgSeenRatePercent: avgSeenRate,
     },
+    mostSeenTask,
+    mostSeenAnnouncement,
+    officerSeenActivity,
   });
 }
