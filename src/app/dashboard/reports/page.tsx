@@ -1,6 +1,6 @@
 ﻿"use client";
-import { useState } from "react";
-import { BarChart3, Loader2, TrendingUp, Eye, Award, AlertTriangle, Megaphone } from "lucide-react";
+import { useState, useRef } from "react";
+import { BarChart3, Loader2, TrendingUp, Eye, Award, Megaphone, Download } from "lucide-react";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -40,12 +40,64 @@ function toChartData(obj: Record<string, number>) {
   return Object.entries(obj).map(([name, value]) => ({ name, value }));
 }
 
+function buildExecutiveSummary(data: ReportData): string[] {
+  const points: string[] = [];
+
+  points.push(
+    `Across the period ${data.range.from} to ${data.range.to}, ${data.totalTasks} tasks were logged with a completion rate of ${data.completionRate}%.`
+  );
+
+  if (data.overdueCount > 0) {
+    points.push(
+      `${data.overdueCount} task${data.overdueCount === 1 ? " is" : "s are"} currently overdue and require${data.overdueCount === 1 ? "s" : ""} immediate attention.`
+    );
+  } else {
+    points.push("No tasks are currently overdue — operational tempo is on track.");
+  }
+
+  const criticalCount = data.byPriority["critical"] || 0;
+  if (criticalCount > 0) {
+    points.push(`${criticalCount} task${criticalCount === 1 ? " was" : "s were"} classified as critical priority during this period.`);
+  }
+
+  if (data.bestResponse) {
+    points.push(`${data.bestResponse.name} led officer performance with ${data.bestResponse.completed} task${data.bestResponse.completed === 1 ? "" : "s"} completed.`);
+  } else {
+    points.push("No task completions were recorded in this period.");
+  }
+
+  if (data.weightedRank.length > 0) {
+    const top = data.weightedRank[0];
+    points.push(`On a priority-weighted basis, ${top.name} ranked highest with ${top.weightedScore} points, reflecting both volume and task difficulty.`);
+  }
+
+  points.push(
+    `${data.announcements.total} announcement${data.announcements.total === 1 ? " was" : "s were"} issued, with an average team seen-rate of ${data.announcements.avgSeenRatePercent}%.`
+  );
+
+  if (data.mostSeenTask) {
+    points.push(`"${data.mostSeenTask.title}" was the most-referenced task, viewed ${data.mostSeenTask.seenCount} times.`);
+  }
+  if (data.mostSeenAnnouncement) {
+    points.push(`"${data.mostSeenAnnouncement.title}" was the most-viewed announcement, with ${data.mostSeenAnnouncement.seenCount} views.`);
+  }
+
+  if (data.officerSeenActivity.length > 0) {
+    const top = data.officerSeenActivity[0];
+    points.push(`${top.name} demonstrated the highest engagement, reviewing ${top.totalSeenCount} items across tasks and announcements.`);
+  }
+
+  return points;
+}
+
 export default function ReportsPage() {
   const [from, setFrom] = useState(monthAgoStr());
   const [to, setTo] = useState(todayStr());
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   const generate = async () => {
     setLoading(true);
@@ -62,22 +114,69 @@ export default function ReportsPage() {
     }
   };
 
+  const exportPdf = async () => {
+    if (!reportRef.current) return;
+    setExporting(true);
+    try {
+      const html2canvas = (await import("html2canvas")).default;
+      const { jsPDF } = await import("jspdf");
+
+      const canvas = await html2canvas(reportRef.current, { scale: 2, backgroundColor: "#f8fafc" });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = pageWidth;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`8-bishopsgate-report-${from}-to-${to}.pdf`);
+    } catch (e) {
+      console.error("PDF export failed", e);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      {/* Header */}
       <div className="brand-hero rounded-2xl p-6 mb-6 text-white relative overflow-hidden">
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center">
-            <BarChart3 className="w-6 h-6" />
+        <div className="relative z-10 flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center">
+              <BarChart3 className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold tracking-tight">Executive Security Report</h1>
+              <p className="text-sm text-white/60">Operational performance, engagement and officer activity</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight">Executive Security Report</h1>
-            <p className="text-sm text-white/60">Operational performance, engagement and officer activity</p>
-          </div>
+          {data && (
+            <button
+              onClick={exportPdf}
+              disabled={exporting}
+              className="btn-brand sheen-wrap px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-60 flex items-center gap-2"
+            >
+              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              {exporting ? "Exporting…" : "Export PDF"}
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Date range picker */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6 flex flex-wrap items-end gap-4">
         <div>
           <label className="text-xs font-medium text-slate-700 uppercase tracking-wide">From</label>
@@ -101,8 +200,20 @@ export default function ReportsPage() {
       )}
 
       {data && (
-        <div className="space-y-6 animate-rise">
-          {/* KPI cards */}
+        <div ref={reportRef} className="space-y-6 animate-rise bg-slate-50 p-1">
+          {/* Executive summary */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6">
+            <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Executive summary</h2>
+            <ul className="space-y-2">
+              {buildExecutiveSummary(data).map((point, i) => (
+                <li key={i} className="text-sm text-slate-700 flex gap-2">
+                  <span className="text-[#F64F0C] font-bold flex-shrink-0">•</span>
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
               <div className="text-3xl font-bold text-slate-900">{data.totalTasks}</div>
@@ -122,7 +233,6 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Charts row */}
           <div className="grid lg:grid-cols-2 gap-4">
             <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
               <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Task status breakdown</h2>
@@ -155,7 +265,6 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Officer comparison chart */}
           <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
             <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-[#F64F0C]" /> Officer activity — assigned vs completed
@@ -173,7 +282,6 @@ export default function ReportsPage() {
             </ResponsiveContainer>
           </div>
 
-          {/* Announcement classification */}
           <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
             <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
               <Megaphone className="w-4 h-4 text-[#F64F0C]" /> Announcement classification
@@ -192,7 +300,6 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Highlights: best response, most seen */}
           <div className="grid lg:grid-cols-3 gap-4">
             <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
               <div className="flex items-center gap-2 mb-2">
@@ -238,7 +345,6 @@ export default function ReportsPage() {
             </div>
           </div>
 
-          {/* Weighted completion leaderboard */}
           {data.weightedRank.length > 0 && (
             <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
               <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
@@ -260,7 +366,6 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Officer activity table */}
           <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
             <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Officer activity detail</h2>
             <table className="w-full text-sm">
@@ -287,7 +392,6 @@ export default function ReportsPage() {
             </table>
           </div>
 
-          {/* Officer seen activity */}
           {data.officerSeenActivity.length > 0 && (
             <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
               <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
