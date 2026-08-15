@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { announcements, announcementSeen, attachments, reminders, users } from "@/db/schema";
 import { eq, desc, asc, and, or, ilike, inArray } from "drizzle-orm";
 import { getSession, isSupervisorOrAbove } from "@/lib/auth";
+import { sendPushToUsers } from "@/lib/push";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -150,6 +151,17 @@ export async function POST(req: NextRequest) {
       expiresAt: body.expiresAt ? new Date(body.expiresAt) : null,
     })
     .returning();
+
+  const allUsers = await db.select({ id: users.id }).from(users);
+  const recipients = allUsers.map((u) => u.id).filter((id) => id !== session.id);
+  if (recipients.length) {
+    sendPushToUsers(recipients, {
+      title: "New announcement",
+      body: title,
+      url: "/dashboard/announcements",
+      tag: `announcement-${row.id}`,
+    }).catch(() => {});
+  }
 
   return NextResponse.json({ announcement: row }, { status: 201 });
 }
