@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Download,
+  BarChart3,
   ChevronRight,
 } from "lucide-react";
 import { AuthProvider, useAuth, useRole } from "@/components/AuthProvider";
@@ -36,6 +37,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/announcements", label: "Announcements", icon: <Megaphone className="w-5 h-5" /> },
   { href: "/dashboard/site", label: "Site Info", icon: <Landmark className="w-5 h-5" /> },
   { href: "/dashboard/users", label: "Team", icon: <UsersIcon className="w-5 h-5" /> },
+  { href: "/dashboard/reports", label: "Reports", icon: <BarChart3 className="w-5 h-5" />, supervisorOnly: true },
   { href: "/dashboard/download", label: "App Download", icon: <Download className="w-5 h-5" /> },
 ];
 
