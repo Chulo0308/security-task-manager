@@ -100,7 +100,7 @@ function FieldRow({ label, value }: { label: string; value: string }) {
 
 function SectionHeader({ title, icon }: { title: string; icon?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+    <div className="flex items-center gap-2 mb-5 pb-4 border-b border-slate-100">
       {icon}
       <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">{title}</h2>
     </div>
@@ -111,15 +111,15 @@ function KpiCard({ label, value, icon, accent }: { label: string; value: string;
   return (
     <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       <div className="h-1" style={{ background: accent }} />
-      <div className="p-5">
+      <div className="p-6">
         <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+          className="w-10 h-10 rounded-lg flex items-center justify-center mb-4"
           style={{ background: accent + "1A", color: accent }}
         >
           {icon}
         </div>
         <div className="text-3xl font-bold text-slate-900 tabular-nums leading-none">{value}</div>
-        <div className="text-sm text-slate-500 mt-2">{label}</div>
+        <div className="text-sm text-slate-500 mt-2.5">{label}</div>
       </div>
     </div>
   );
@@ -128,13 +128,13 @@ function KpiCard({ label, value, icon, accent }: { label: string; value: string;
 function DonutCard({ title, icon, data }: { title: string; icon?: React.ReactNode; data: { name: string; value: number }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5">
+    <div className="bg-white rounded-2xl border border-slate-200 p-7">
       <SectionHeader title={title} icon={icon} />
-      <div className="flex items-center gap-5">
-        <div className="relative w-[150px] h-[150px] flex-shrink-0">
+      <div className="flex items-center gap-8">
+        <div className="relative w-[160px] h-[160px] flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={74} paddingAngle={2} strokeWidth={0}>
+              <Pie data={data} dataKey="value" nameKey="name" innerRadius={54} outerRadius={78} paddingAngle={3} strokeWidth={0}>
                 {data.map((_, i) => (<Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />))}
               </Pie>
               <Tooltip />
@@ -142,17 +142,17 @@ function DonutCard({ title, icon, data }: { title: string; icon?: React.ReactNod
           </ResponsiveContainer>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <div className="text-2xl font-bold text-slate-900 tabular-nums">{total}</div>
-            <div className="text-[9px] uppercase tracking-wide text-slate-400">Total</div>
+            <div className="text-[9px] uppercase tracking-wide text-slate-400 mt-0.5">Total</div>
           </div>
         </div>
-        <div className="flex-1 min-w-0 space-y-2">
+        <div className="flex-1 min-w-0 space-y-3">
           {data.map((d, i) => (
             <div key={d.name} className="flex items-center justify-between text-sm">
-              <span className="flex items-center gap-2 min-w-0">
+              <span className="flex items-center gap-2.5 min-w-0">
                 <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: BRAND_COLORS[i % BRAND_COLORS.length] }} />
                 <span className="text-slate-600 truncate">{d.name}</span>
               </span>
-              <span className="font-semibold text-slate-900 tabular-nums ml-2">{d.value}</span>
+              <span className="font-semibold text-slate-900 tabular-nums ml-3">{d.value}</span>
             </div>
           ))}
         </div>
@@ -254,40 +254,37 @@ export default function ReportsPage() {
       )}
 
       {data && (
-        <div ref={reportRef} className="space-y-5 animate-rise bg-slate-50 p-1">
+        <div ref={reportRef} className="space-y-9 animate-rise bg-slate-50 p-3">
           {/* Formal document header */}
-          <div className="brand-hero rounded-2xl p-8 text-white relative overflow-hidden">
+          <div className="brand-hero rounded-2xl p-9 text-white relative overflow-hidden">
             <div className="relative z-10">
-              <div className="flex items-center justify-between gap-4 pb-6 mb-6 border-b border-white/15">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center p-2.5 flex-shrink-0">
-                    <img src="/logo.png" alt="8 Bishopsgate" className="w-full h-full object-contain" />
-                  </div>
-                  <div>
-                    <div className="text-[11px] tracking-[0.25em] text-white/50 uppercase font-medium">8 Bishopsgate Security Operations</div>
-                    <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Executive Security Report</h1>
-                  </div>
+              <div className="flex items-start gap-4 pb-7 mb-7 border-b border-white/15">
+                <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center p-2.5 flex-shrink-0">
+                  <img src="/logo.png" alt="8 Bishopsgate" className="w-full h-full object-contain" />
                 </div>
-                <div className="text-right hidden sm:block">
-                  <div className="text-[10px] uppercase tracking-wide text-white/40">Report Ref.</div>
-                  <div className="text-xs font-mono text-white/70">{reference}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[11px] tracking-[0.25em] text-white/50 uppercase font-medium">8 Bishopsgate Security Operations</div>
+                  <h1 className="text-2xl font-semibold tracking-tight mt-1">Executive Security Report</h1>
                 </div>
               </div>
-              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3">
+              <div className="grid sm:grid-cols-2 gap-x-10 gap-y-4">
                 <FieldRow label="Subject" value="Operational performance, engagement and officer activity" />
                 <FieldRow label="Period" value={`${formatUKDate(data.range.from)} — ${formatUKDate(data.range.to)}`} />
                 <FieldRow label="Prepared" value={formatUKDateNow()} />
                 <FieldRow label="Classification" value="Internal — Management" />
               </div>
+              <div className="mt-7 pt-5 border-t border-white/10 text-[11px] text-white/40 font-mono">
+                Report reference: {reference}
+              </div>
             </div>
           </div>
 
           {/* Executive summary */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6">
+          <div className="bg-white rounded-2xl border border-slate-200 p-7">
             <SectionHeader title="Executive Summary" />
-            <ul className="space-y-2.5">
+            <ul className="space-y-3.5">
               {buildExecutiveSummary(data).map((point, i) => (
-                <li key={i} className="text-sm text-slate-700 flex gap-2.5 leading-relaxed">
+                <li key={i} className="text-sm text-slate-700 flex gap-3 leading-relaxed">
                   <span className="text-[#F64F0C] font-bold flex-shrink-0">—</span>
                   <span>{point}</span>
                 </li>
@@ -296,81 +293,81 @@ export default function ReportsPage() {
           </div>
 
           {/* KPIs */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <KpiCard label="Total tasks" value={String(data.totalTasks)} icon={<ListChecks className="w-4.5 h-4.5" />} accent={NAVY} />
-            <KpiCard label="Completion rate" value={`${data.completionRate}%`} icon={<CheckCircle2 className="w-4.5 h-4.5" />} accent={ORANGE} />
-            <KpiCard label="Overdue" value={String(data.overdueCount)} icon={<AlertTriangle className="w-4.5 h-4.5" />} accent="#e11d48" />
-            <KpiCard label="Announcements" value={String(data.announcements.total)} icon={<Megaphone className="w-4.5 h-4.5" />} accent="#2a4a80" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
+            <KpiCard label="Total tasks" value={String(data.totalTasks)} icon={<ListChecks className="w-5 h-5" />} accent={NAVY} />
+            <KpiCard label="Completion rate" value={`${data.completionRate}%`} icon={<CheckCircle2 className="w-5 h-5" />} accent={ORANGE} />
+            <KpiCard label="Overdue" value={String(data.overdueCount)} icon={<AlertTriangle className="w-5 h-5" />} accent="#e11d48" />
+            <KpiCard label="Announcements" value={String(data.announcements.total)} icon={<Megaphone className="w-5 h-5" />} accent="#2a4a80" />
           </div>
 
           {/* Donut charts */}
-          <div className="grid lg:grid-cols-2 gap-4">
+          <div className="grid lg:grid-cols-2 gap-5">
             <DonutCard title="Task Status Breakdown" data={toChartData(data.byStatus)} />
             <DonutCard title="Priority Breakdown" data={toChartData(data.byPriority)} />
           </div>
 
           {/* Officer comparison */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="bg-white rounded-2xl border border-slate-200 p-7">
             <SectionHeader title="Officer Activity — Assigned vs Completed" icon={<TrendingUp className="w-4 h-4 text-[#F64F0C]" />} />
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={data.officerActivity} barGap={4}>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={data.officerActivity} barGap={6} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
                 <Tooltip cursor={{ fill: "#f8fafc" }} />
-                <Bar dataKey="assigned" fill={NAVY} radius={[4, 4, 0, 0]} name="Assigned" maxBarSize={28} />
-                <Bar dataKey="completed" fill={ORANGE} radius={[4, 4, 0, 0]} name="Completed" maxBarSize={28} />
+                <Bar dataKey="assigned" fill={NAVY} radius={[4, 4, 0, 0]} name="Assigned" maxBarSize={26} />
+                <Bar dataKey="completed" fill={ORANGE} radius={[4, 4, 0, 0]} name="Completed" maxBarSize={26} />
               </BarChart>
             </ResponsiveContainer>
-            <div className="flex items-center gap-4 mt-2 justify-center text-xs text-slate-500">
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: NAVY }} />Assigned</span>
-              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: ORANGE }} />Completed</span>
+            <div className="flex items-center gap-5 mt-5 justify-center text-xs text-slate-500">
+              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full" style={{ background: NAVY }} />Assigned</span>
+              <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full" style={{ background: ORANGE }} />Completed</span>
             </div>
           </div>
 
           {/* Announcement classification */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="bg-white rounded-2xl border border-slate-200 p-7">
             <SectionHeader title="Announcement Classification" icon={<Megaphone className="w-4 h-4 text-[#F64F0C]" />} />
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               {Object.entries(data.announcements.byPriority).map(([priority, count]) => (
-                <div key={priority} className="bg-slate-50 rounded-xl p-4 text-center">
+                <div key={priority} className="bg-slate-50 rounded-xl p-5 text-center">
                   <div className="text-2xl font-bold text-slate-900 tabular-nums">{count}</div>
-                  <div className="text-[10px] uppercase tracking-wide text-slate-500 mt-1">{titleCase(priority)}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-slate-500 mt-1.5">{titleCase(priority)}</div>
                 </div>
               ))}
-              <div className="bg-slate-50 rounded-xl p-4 text-center">
+              <div className="bg-slate-50 rounded-xl p-5 text-center">
                 <div className="text-2xl font-bold text-[#F64F0C] tabular-nums">{data.announcements.avgSeenRatePercent}%</div>
-                <div className="text-[10px] uppercase tracking-wide text-slate-500 mt-1">Avg Seen Rate</div>
+                <div className="text-[10px] uppercase tracking-wide text-slate-500 mt-1.5">Avg Seen Rate</div>
               </div>
             </div>
           </div>
 
           {/* Highlights */}
-          <div className="grid lg:grid-cols-3 gap-4">
-            <div className="bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2 mb-2 text-slate-400"><Award className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Best Response</h3></div>
+          <div className="grid lg:grid-cols-3 gap-5">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+              <div className="flex items-center gap-2 mb-3 text-slate-400"><Award className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Best Response</h3></div>
               {data.bestResponse ? (
                 <>
                   <div className="text-lg font-bold text-slate-900">{data.bestResponse.name}</div>
-                  <div className="text-sm text-slate-500">{data.bestResponse.completed} tasks completed</div>
+                  <div className="text-sm text-slate-500 mt-1">{data.bestResponse.completed} tasks completed</div>
                 </>
               ) : (<div className="text-sm text-slate-400">No completions in range</div>)}
             </div>
-            <div className="bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2 mb-2 text-slate-400"><Eye className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Most-Seen Task</h3></div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+              <div className="flex items-center gap-2 mb-3 text-slate-400"><Eye className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Most-Seen Task</h3></div>
               {data.mostSeenTask ? (
                 <>
                   <div className="text-sm font-semibold text-slate-900 line-clamp-2">{data.mostSeenTask.title}</div>
-                  <div className="text-sm text-slate-500">{data.mostSeenTask.seenCount} views</div>
+                  <div className="text-sm text-slate-500 mt-1">{data.mostSeenTask.seenCount} views</div>
                 </>
               ) : (<div className="text-sm text-slate-400">No views recorded</div>)}
             </div>
-            <div className="bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2 mb-2 text-slate-400"><Eye className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Most-Seen Announcement</h3></div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+              <div className="flex items-center gap-2 mb-3 text-slate-400"><Eye className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Most-Seen Announcement</h3></div>
               {data.mostSeenAnnouncement ? (
                 <>
                   <div className="text-sm font-semibold text-slate-900 line-clamp-2">{data.mostSeenAnnouncement.title}</div>
-                  <div className="text-sm text-slate-500">{data.mostSeenAnnouncement.seenCount} views</div>
+                  <div className="text-sm text-slate-500 mt-1">{data.mostSeenAnnouncement.seenCount} views</div>
                 </>
               ) : (<div className="text-sm text-slate-400">No views recorded</div>)}
             </div>
@@ -378,12 +375,12 @@ export default function ReportsPage() {
 
           {/* Weighted leaderboard */}
           {data.weightedRank.length > 0 && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200 p-7">
               <SectionHeader title="Weighted Completion Leaderboard" icon={<Award className="w-4 h-4 text-[#F64F0C]" />} />
-              <p className="text-xs text-slate-400 mb-3 -mt-2">Critical tasks score higher than routine ones</p>
-              <div className="space-y-2">
+              <p className="text-xs text-slate-400 mb-4 -mt-3">Critical tasks score higher than routine ones</p>
+              <div className="space-y-2.5">
                 {data.weightedRank.map((o, i) => (
-                  <div key={o.userId} className="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-lg">
+                  <div key={o.userId} className="flex items-center gap-4 px-4 py-3 bg-slate-50 rounded-lg">
                     <div className="w-6 h-6 rounded-full bg-[#F64F0C] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{i + 1}</div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-slate-900">{o.name}</div>
@@ -397,24 +394,24 @@ export default function ReportsPage() {
           )}
 
           {/* Officer activity table */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="bg-white rounded-2xl border border-slate-200 p-7">
             <SectionHeader title="Officer Activity Detail" />
-            <table className="w-full text-sm">
+            <table className="w-full text-sm border-separate" style={{ borderSpacing: "0 2px" }}>
               <thead>
                 <tr className="text-left text-slate-500 bg-slate-50">
-                  <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide rounded-l-lg">Officer</th>
-                  <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right">Assigned</th>
-                  <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right">Completed</th>
-                  <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right rounded-r-lg">Avg Response</th>
+                  <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wide rounded-l-lg">Officer</th>
+                  <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wide text-right">Assigned</th>
+                  <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wide text-right">Completed</th>
+                  <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wide text-right rounded-r-lg">Avg Response</th>
                 </tr>
               </thead>
               <tbody>
                 {data.officerActivity.map((o, i) => (
                   <tr key={o.userId} className={i % 2 === 1 ? "bg-slate-50/60" : ""}>
-                    <td className="py-2.5 px-3 font-medium text-slate-800">{o.name}</td>
-                    <td className="py-2.5 px-3 text-right tabular-nums">{o.assigned}</td>
-                    <td className="py-2.5 px-3 text-right tabular-nums">{o.completed}</td>
-                    <td className="py-2.5 px-3 text-right tabular-nums">{o.avgResponseDays === null ? "—" : `${o.avgResponseDays > 0 ? "+" : ""}${o.avgResponseDays}d`}</td>
+                    <td className="py-3 px-4 font-medium text-slate-800">{o.name}</td>
+                    <td className="py-3 px-4 text-right tabular-nums">{o.assigned}</td>
+                    <td className="py-3 px-4 text-right tabular-nums">{o.completed}</td>
+                    <td className="py-3 px-4 text-right tabular-nums">{o.avgResponseDays === null ? "—" : `${o.avgResponseDays > 0 ? "+" : ""}${o.avgResponseDays}d`}</td>
                   </tr>
                 ))}
               </tbody>
@@ -423,24 +420,24 @@ export default function ReportsPage() {
 
           {/* Officer seen activity */}
           {data.officerSeenActivity.length > 0 && (
-            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <div className="bg-white rounded-2xl border border-slate-200 p-7">
               <SectionHeader title="Officer Engagement — Items Viewed" icon={<Eye className="w-4 h-4 text-[#F64F0C]" />} />
-              <table className="w-full text-sm">
+              <table className="w-full text-sm border-separate" style={{ borderSpacing: "0 2px" }}>
                 <thead>
                   <tr className="text-left text-slate-500 bg-slate-50">
-                    <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide rounded-l-lg">Officer</th>
-                    <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right">Tasks Seen</th>
-                    <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right">Announcements Seen</th>
-                    <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right rounded-r-lg">Total</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wide rounded-l-lg">Officer</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wide text-right">Tasks Seen</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wide text-right">Announcements Seen</th>
+                    <th className="py-3 px-4 font-semibold text-xs uppercase tracking-wide text-right rounded-r-lg">Total</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.officerSeenActivity.map((o, i) => (
                     <tr key={o.userId} className={i % 2 === 1 ? "bg-slate-50/60" : ""}>
-                      <td className="py-2.5 px-3 font-medium text-slate-800">{o.name}</td>
-                      <td className="py-2.5 px-3 text-right tabular-nums">{o.tasksSeenCount}</td>
-                      <td className="py-2.5 px-3 text-right tabular-nums">{o.annsSeenCount}</td>
-                      <td className="py-2.5 px-3 text-right font-semibold tabular-nums">{o.totalSeenCount}</td>
+                      <td className="py-3 px-4 font-medium text-slate-800">{o.name}</td>
+                      <td className="py-3 px-4 text-right tabular-nums">{o.tasksSeenCount}</td>
+                      <td className="py-3 px-4 text-right tabular-nums">{o.annsSeenCount}</td>
+                      <td className="py-3 px-4 text-right font-semibold tabular-nums">{o.totalSeenCount}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -449,7 +446,7 @@ export default function ReportsPage() {
           )}
 
           {/* Footer */}
-          <div className="text-center text-[11px] text-slate-400 pt-3 pb-1">
+          <div className="text-center text-[11px] text-slate-400 pt-4 pb-2">
             8 Bishopsgate Security Operations · Confidential — Internal Distribution Only · {reference}
           </div>
         </div>
