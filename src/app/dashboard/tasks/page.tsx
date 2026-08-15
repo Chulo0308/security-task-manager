@@ -130,8 +130,10 @@ export default function TasksPage() {
   const [floors, setFloors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string[]>([]);
+    const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
+  const [dueTodayFilter, setDueTodayFilter] = useState(false);
+  const [overdueFilter, setOverdueFilter] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [formOpen, setFormOpen] = useState(false);
@@ -164,6 +166,13 @@ export default function TasksPage() {
   useEffect(() => {
     loadTasks();
   }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const status = params.get("status");
+    if (status) setStatusFilter([status]);
+    if (params.get("dueToday") === "true") setDueTodayFilter(true);
+    if (params.get("overdue") === "true") setOverdueFilter(true);
+  }, []);
 
   // Filtered tasks
   const filtered = useMemo(() => {
@@ -173,6 +182,12 @@ export default function TasksPage() {
       if (statusFilter.length && !statusFilter.includes(t.status)) return false;
       if (priorityFilter.length && !priorityFilter.includes(t.priority)) return false;
       if (categoryFilter.length && !categoryFilter.includes(t.category)) return false;
+      if (dueTodayFilter) {
+        if (!t.dueAt || !isToday(new Date(t.dueAt)) || t.status === "completed" || t.status === "cancelled") return false;
+      }
+      if (overdueFilter) {
+        if (!t.dueAt || !isPast(new Date(t.dueAt)) || t.status === "completed" || t.status === "cancelled") return false;
+      }
       // Non-supervisors see only tasks assigned to them (or with no assignee)
       if (!isSupervisorOrAbove && t.assignedTo && t.assignedTo !== "") {
         // We don't have current user id easily; rely on assigneeName match.
@@ -180,7 +195,7 @@ export default function TasksPage() {
       }
       return true;
     });
-  }, [tasks, search, statusFilter, priorityFilter, categoryFilter, isSupervisorOrAbove]);
+}, [tasks, search, statusFilter, priorityFilter, categoryFilter, dueTodayFilter, overdueFilter, isSupervisorOrAbove]);
 
   const grouped = useMemo(() => {
     const overdue = filtered.filter(

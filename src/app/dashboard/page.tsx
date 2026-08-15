@@ -216,12 +216,13 @@ export default function DashboardOverview() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard
+                <StatCard
           icon={<ListChecks className="w-5 h-5" />}
           label="Open tasks"
           value={loading ? "—" : stats.open}
           accent="from-indigo-500 to-sky-500"
           description="Active across the site"
+          href="/dashboard/tasks?status=open"
         />
         <StatCard
           icon={<Clock className="w-5 h-5" />}
@@ -229,6 +230,7 @@ export default function DashboardOverview() {
           value={loading ? "—" : stats.today}
           accent="from-amber-500 to-orange-500"
           description="Requires attention"
+          href="/dashboard/tasks?dueToday=true"
         />
         <StatCard
           icon={<AlertTriangle className="w-5 h-5" />}
@@ -236,6 +238,7 @@ export default function DashboardOverview() {
           value={loading ? "—" : stats.overdue}
           accent="from-rose-500 to-pink-600"
           description="Escalate immediately"
+          href="/dashboard/tasks?overdue=true"
         />
         <StatCard
           icon={<CheckCircle2 className="w-5 h-5" />}
@@ -243,6 +246,7 @@ export default function DashboardOverview() {
           value={loading ? "—" : stats.completed}
           accent="from-emerald-500 to-teal-600"
           description="This reporting period"
+          href="/dashboard/tasks?status=completed"
         />
       </div>
 
@@ -484,15 +488,17 @@ function StatCard({
   value,
   accent,
   description,
+  href,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string | number;
   accent: string;
   description: string;
+  href?: string;
 }) {
-  return (
-    <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5 shadow-sm">
+  const content = (
+    <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5 shadow-sm cursor-pointer">
       <div className="flex items-start justify-between">
         <div className={`w-11 h-11 rounded-xl bg-gradient-to-br ${accent} flex items-center justify-center text-white shadow-md`}>
           {icon}
@@ -506,6 +512,8 @@ function StatCard({
       </div>
     </div>
   );
+  if (href) return <Link href={href}>{content}</Link>;
+  return content;
 }
 
 function TaskRow({ task }: { task: Task }) {
