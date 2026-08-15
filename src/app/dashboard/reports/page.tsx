@@ -153,26 +153,48 @@ export default function ReportsPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      <div className="brand-hero rounded-2xl p-6 mb-6 text-white relative overflow-hidden">
-        <div className="relative z-10 flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center">
-              <BarChart3 className="w-6 h-6" />
+            <div className="brand-hero rounded-2xl p-8 mb-6 text-white relative overflow-hidden">
+        <div className="relative z-10">
+          <div className="flex items-start justify-between flex-wrap gap-4 pb-6 mb-6 border-b border-white/15">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center p-2.5">
+                <img src="/logo.png" alt="8 Bishopsgate" className="w-full h-full object-contain" />
+              </div>
+              <div>
+                <div className="text-[11px] tracking-[0.25em] text-white/50 uppercase font-medium">8 Bishopsgate Security Operations</div>
+                <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Executive Security Report</h1>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-semibold tracking-tight">Executive Security Report</h1>
-              <p className="text-sm text-white/60">Operational performance, engagement and officer activity</p>
-            </div>
+            {data && (
+              <button
+                onClick={exportPdf}
+                disabled={exporting}
+                className="btn-brand sheen-wrap px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-60 flex items-center gap-2"
+              >
+                {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                {exporting ? "Exporting…" : "Export PDF"}
+              </button>
+            )}
           </div>
           {data && (
-            <button
-              onClick={exportPdf}
-              disabled={exporting}
-              className="btn-brand sheen-wrap px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-60 flex items-center gap-2"
-            >
-              {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              {exporting ? "Exporting…" : "Export PDF"}
-            </button>
+            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
+              <div className="flex gap-2">
+                <span className="text-white/50 uppercase text-xs tracking-wide w-20 flex-shrink-0 pt-0.5">Subject</span>
+                <span className="font-medium">Operational performance, engagement and officer activity</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-white/50 uppercase text-xs tracking-wide w-20 flex-shrink-0 pt-0.5">Period</span>
+                <span className="font-medium">{data.range.from} — {data.range.to}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-white/50 uppercase text-xs tracking-wide w-20 flex-shrink-0 pt-0.5">Prepared</span>
+                <span className="font-medium">{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-white/50 uppercase text-xs tracking-wide w-20 flex-shrink-0 pt-0.5">Classification</span>
+                <span className="font-medium">Internal — Management</span>
+              </div>
+            </div>
           )}
         </div>
       </div>
