@@ -191,23 +191,39 @@ export default function ReportsPage() {
     try {
       const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
-      const canvas = await html2canvas(reportRef.current, { scale: 2, backgroundColor: "#f8fafc" });
-      const imgData = canvas.toDataURL("image/png");
+
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pageWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+      const margin = 10;
+      const usableWidth = pageWidth - margin * 2;
+      const gap = 5;
+
+      // Capture each top-level block (header, summary, KPI row, charts, tables...)
+      // as its own image, so a card is never sliced across a page boundary.
+      const sections = Array.from(reportRef.current.children) as HTMLElement[];
+      let y = margin;
+      let firstOnPage = true;
+
+      for (const section of sections) {
+        const canvas = await html2canvas(section, { scale: 2, backgroundColor: "#f8fafc" });
+        const imgData = canvas.toDataURL("image/png");
+        const imgHeight = (canvas.height * usableWidth) / canvas.width;
+
+        // If this block won't fit in the remaining space, start a fresh page —
+        // unless it's already the first block on the page (avoid infinite loop
+        // for a single block taller than one page).
+        if (!firstOnPage && y + imgHeight > pageHeight - margin) {
+          pdf.addPage();
+          y = margin;
+          firstOnPage = true;
+        }
+
+        pdf.addImage(imgData, "PNG", margin, y, usableWidth, imgHeight);
+        y += imgHeight + gap;
+        firstOnPage = false;
       }
+
       pdf.save(`8-bishopsgate-report-${from}-to-${to}.pdf`);
     } catch (e) {
       console.error("PDF export failed", e);
