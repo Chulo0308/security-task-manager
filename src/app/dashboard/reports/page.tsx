@@ -42,52 +42,46 @@ function toChartData(obj: Record<string, number>) {
 
 function buildExecutiveSummary(data: ReportData): string[] {
   const points: string[] = [];
-
-  points.push(
-    `Across the period ${data.range.from} to ${data.range.to}, ${data.totalTasks} tasks were logged with a completion rate of ${data.completionRate}%.`
-  );
-
+  points.push(`Across the period ${data.range.from} to ${data.range.to}, ${data.totalTasks} tasks were logged with a completion rate of ${data.completionRate}%.`);
   if (data.overdueCount > 0) {
-    points.push(
-      `${data.overdueCount} task${data.overdueCount === 1 ? " is" : "s are"} currently overdue and require${data.overdueCount === 1 ? "s" : ""} immediate attention.`
-    );
+    points.push(`${data.overdueCount} task${data.overdueCount === 1 ? " is" : "s are"} currently overdue and require${data.overdueCount === 1 ? "s" : ""} immediate attention.`);
   } else {
     points.push("No tasks are currently overdue — operational tempo is on track.");
   }
-
   const criticalCount = data.byPriority["critical"] || 0;
   if (criticalCount > 0) {
     points.push(`${criticalCount} task${criticalCount === 1 ? " was" : "s were"} classified as critical priority during this period.`);
   }
-
   if (data.bestResponse) {
     points.push(`${data.bestResponse.name} led officer performance with ${data.bestResponse.completed} task${data.bestResponse.completed === 1 ? "" : "s"} completed.`);
   } else {
     points.push("No task completions were recorded in this period.");
   }
-
   if (data.weightedRank.length > 0) {
     const top = data.weightedRank[0];
     points.push(`On a priority-weighted basis, ${top.name} ranked highest with ${top.weightedScore} points, reflecting both volume and task difficulty.`);
   }
-
-  points.push(
-    `${data.announcements.total} announcement${data.announcements.total === 1 ? " was" : "s were"} issued, with an average team seen-rate of ${data.announcements.avgSeenRatePercent}%.`
-  );
-
+  points.push(`${data.announcements.total} announcement${data.announcements.total === 1 ? " was" : "s were"} issued, with an average team seen-rate of ${data.announcements.avgSeenRatePercent}%.`);
   if (data.mostSeenTask) {
     points.push(`"${data.mostSeenTask.title}" was the most-referenced task, viewed ${data.mostSeenTask.seenCount} times.`);
   }
   if (data.mostSeenAnnouncement) {
     points.push(`"${data.mostSeenAnnouncement.title}" was the most-viewed announcement, with ${data.mostSeenAnnouncement.seenCount} views.`);
   }
-
   if (data.officerSeenActivity.length > 0) {
     const top = data.officerSeenActivity[0];
     points.push(`${top.name} demonstrated the highest engagement, reviewing ${top.totalSeenCount} items across tasks and announcements.`);
   }
-
   return points;
+}
+
+function FieldRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline">
+      <span className="text-white/50 uppercase text-xs tracking-wide w-24 flex-shrink-0 whitespace-nowrap">{label}:</span>
+      <span className="font-medium ml-2">{value}</span>
+    </div>
+  );
 }
 
 export default function ReportsPage() {
@@ -120,29 +114,23 @@ export default function ReportsPage() {
     try {
       const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
-
       const canvas = await html2canvas(reportRef.current, { scale: 2, backgroundColor: "#f8fafc" });
       const imgData = canvas.toDataURL("image/png");
-
       const pdf = new jsPDF("p", "mm", "a4");
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
       const imgWidth = pageWidth;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
       let heightLeft = imgHeight;
       let position = 0;
-
       pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
-
       while (heightLeft > 0) {
         position = heightLeft - imgHeight;
         pdf.addPage();
         pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
       }
-
       pdf.save(`8-bishopsgate-report-${from}-to-${to}.pdf`);
     } catch (e) {
       console.error("PDF export failed", e);
@@ -153,52 +141,11 @@ export default function ReportsPage() {
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
-            <div className="brand-hero rounded-2xl p-8 mb-6 text-white relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="flex items-start justify-between flex-wrap gap-4 pb-6 mb-6 border-b border-white/15">
-            <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center p-2.5">
-                <img src="/logo.png" alt="8 Bishopsgate" className="w-full h-full object-contain" />
-              </div>
-              <div>
-                <div className="text-[11px] tracking-[0.25em] text-white/50 uppercase font-medium">8 Bishopsgate Security Operations</div>
-                <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Executive Security Report</h1>
-              </div>
-            </div>
-            {data && (
-              <button
-                onClick={exportPdf}
-                disabled={exporting}
-                className="btn-brand sheen-wrap px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-60 flex items-center gap-2"
-              >
-                {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-                {exporting ? "Exporting…" : "Export PDF"}
-              </button>
-            )}
-          </div>
-          {data && (
-            <div className="grid sm:grid-cols-2 gap-x-8 gap-y-1.5 text-sm">
-              <div className="flex gap-2">
-                <span className="text-white/50 uppercase text-xs tracking-wide w-20 flex-shrink-0 pt-0.5">Subject</span>
-                <span className="font-medium">Operational performance, engagement and officer activity</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="text-white/50 uppercase text-xs tracking-wide w-20 flex-shrink-0 pt-0.5">Period</span>
-                <span className="font-medium">{data.range.from} — {data.range.to}</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="text-white/50 uppercase text-xs tracking-wide w-20 flex-shrink-0 pt-0.5">Prepared</span>
-                <span className="font-medium">{new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}</span>
-              </div>
-              <div className="flex gap-2">
-                <span className="text-white/50 uppercase text-xs tracking-wide w-20 flex-shrink-0 pt-0.5">Classification</span>
-                <span className="font-medium">Internal — Management</span>
-              </div>
-            </div>
-          )}
-        </div>
+      {/* Toolbar — NOT captured in the PDF */}
+      <div className="flex items-center gap-3 mb-4">
+        <BarChart3 className="w-5 h-5 text-[#F64F0C]" />
+        <h1 className="text-lg font-semibold text-slate-900">Reports</h1>
       </div>
-
       <div className="bg-white rounded-2xl border border-slate-200 p-5 mb-6 flex flex-wrap items-end gap-4">
         <div>
           <label className="text-xs font-medium text-slate-700 uppercase tracking-wide">From</label>
@@ -215,14 +162,43 @@ export default function ReportsPage() {
           {loading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
           Generate report
         </button>
+        {data && (
+          <button onClick={exportPdf} disabled={exporting}
+            className="btn-brand sheen-wrap px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-60 flex items-center gap-2">
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {exporting ? "Exporting…" : "Export PDF"}
+          </button>
+        )}
       </div>
 
       {error && (
         <div className="mb-6 px-4 py-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm">{error}</div>
       )}
 
+      {/* Everything below IS captured in the PDF */}
       {data && (
         <div ref={reportRef} className="space-y-6 animate-rise bg-slate-50 p-1">
+          {/* Formal document header */}
+          <div className="brand-hero rounded-2xl p-8 text-white relative overflow-hidden">
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 pb-6 mb-6 border-b border-white/15">
+                <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center p-2.5 flex-shrink-0">
+                  <img src="/logo.png" alt="8 Bishopsgate" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <div className="text-[11px] tracking-[0.25em] text-white/50 uppercase font-medium">8 Bishopsgate Security Operations</div>
+                  <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Executive Security Report</h1>
+                </div>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                <FieldRow label="Subject" value="Operational performance, engagement and officer activity" />
+                <FieldRow label="Period" value={`${data.range.from} — ${data.range.to}`} />
+                <FieldRow label="Prepared" value={new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} />
+                <FieldRow label="Classification" value="Internal — Management" />
+              </div>
+            </div>
+          </div>
+
           {/* Executive summary */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
             <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Executive summary</h2>
@@ -261,27 +237,20 @@ export default function ReportsPage() {
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie data={toChartData(data.byStatus)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                    {toChartData(data.byStatus).map((_, i) => (
-                      <Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />
-                    ))}
+                    {toChartData(data.byStatus).map((_, i) => (<Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />))}
                   </Pie>
-                  <Tooltip />
-                  <Legend />
+                  <Tooltip /><Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-
             <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
               <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Priority breakdown</h2>
               <ResponsiveContainer width="100%" height={260}>
                 <PieChart>
                   <Pie data={toChartData(data.byPriority)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                    {toChartData(data.byPriority).map((_, i) => (
-                      <Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />
-                    ))}
+                    {toChartData(data.byPriority).map((_, i) => (<Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />))}
                   </Pie>
-                  <Tooltip />
-                  <Legend />
+                  <Tooltip /><Legend />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -296,8 +265,7 @@ export default function ReportsPage() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="name" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} />
-                <Tooltip />
-                <Legend />
+                <Tooltip /><Legend />
                 <Bar dataKey="assigned" fill="#1F3864" radius={[4, 4, 0, 0]} name="Assigned" />
                 <Bar dataKey="completed" fill="#F64F0C" radius={[4, 4, 0, 0]} name="Completed" />
               </BarChart>
@@ -333,9 +301,7 @@ export default function ReportsPage() {
                   <div className="text-lg font-bold text-slate-900">{data.bestResponse.name}</div>
                   <div className="text-sm text-slate-500">{data.bestResponse.completed} tasks completed</div>
                 </>
-              ) : (
-                <div className="text-sm text-slate-400">No completions in range</div>
-              )}
+              ) : (<div className="text-sm text-slate-400">No completions in range</div>)}
             </div>
             <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
               <div className="flex items-center gap-2 mb-2">
@@ -347,9 +313,7 @@ export default function ReportsPage() {
                   <div className="text-sm font-semibold text-slate-900 line-clamp-2">{data.mostSeenTask.title}</div>
                   <div className="text-sm text-slate-500">{data.mostSeenTask.seenCount} views</div>
                 </>
-              ) : (
-                <div className="text-sm text-slate-400">No views recorded</div>
-              )}
+              ) : (<div className="text-sm text-slate-400">No views recorded</div>)}
             </div>
             <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
               <div className="flex items-center gap-2 mb-2">
@@ -361,9 +325,7 @@ export default function ReportsPage() {
                   <div className="text-sm font-semibold text-slate-900 line-clamp-2">{data.mostSeenAnnouncement.title}</div>
                   <div className="text-sm text-slate-500">{data.mostSeenAnnouncement.seenCount} views</div>
                 </>
-              ) : (
-                <div className="text-sm text-slate-400">No views recorded</div>
-              )}
+              ) : (<div className="text-sm text-slate-400">No views recorded</div>)}
             </div>
           </div>
 
@@ -405,9 +367,7 @@ export default function ReportsPage() {
                     <td className="py-2">{o.name}</td>
                     <td className="py-2">{o.assigned}</td>
                     <td className="py-2">{o.completed}</td>
-                    <td className="py-2">
-                      {o.avgResponseDays === null ? "—" : `${o.avgResponseDays > 0 ? "+" : ""}${o.avgResponseDays} days`}
-                    </td>
+                    <td className="py-2">{o.avgResponseDays === null ? "—" : `${o.avgResponseDays > 0 ? "+" : ""}${o.avgResponseDays} days`}</td>
                   </tr>
                 ))}
               </tbody>
