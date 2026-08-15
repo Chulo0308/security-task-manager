@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { format, formatDistanceToNow, isPast, isToday } from "date-fns";
@@ -42,6 +42,7 @@ type Task = {
   completedAt: string | null;
   createdAt: string;
   assignedTo: string | null;
+  createdBy: string;
   assigneeName: string | null;
   assigneeTitle: string | null;
   creatorName: string | null;
@@ -91,21 +92,21 @@ const CATEGORIES = [
 ];
 
 const LOCATIONS = [
-  "Lobby – Main Entrance",
-  "Reception – Lobby Entrance",
-  "Loading Bay – Undershaft Road",
+  "Lobby â€“ Main Entrance",
+  "Reception â€“ Lobby Entrance",
+  "Loading Bay â€“ Undershaft Road",
   "Undershaft Road Perimeter",
   "Plant Room B1",
   "Plant Room B2",
   "Car Park B1/B2",
   "Control Room",
-  "Level 1 – Auditorium",
+  "Level 1 â€“ Auditorium",
   "Level 2 Concourse",
-  "Level 12 – East Lift Lobby",
+  "Level 12 â€“ East Lift Lobby",
   "Level 34",
-  "Level 48 – Board Room",
+  "Level 48 â€“ Board Room",
   "Rooftop Access Point",
-  "Bin Store – Rear of Building",
+  "Bin Store â€“ Rear of Building",
   "Admin Office",
   "All Floors",
 ];
@@ -140,7 +141,12 @@ export default function TasksPage() {
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [seenPending, setSeenPending] = useState<Set<string>>(new Set());
   const { user } = useAuth();
-  const { isSupervisorOrAbove, isAdmin } = useRole();
+    const { isSupervisorOrAbove, isAdmin } = useRole();
+  const canEditTask = (t: Task) =>
+    isSupervisorOrAbove ||
+    t.createdBy === user?.id ||
+    t.assignedTo === user?.id ||
+    (t.assignees ?? []).some((a) => a.userId === user?.id);
   const users = useUsers();
 
     const loadTasks = async () => {
@@ -187,7 +193,7 @@ export default function TasksPage() {
     return { overdue, inProgress, open, completed, cancelled };
   }, [filtered]);
 
-  // Optimistic updates – mutate local state immediately
+  // Optimistic updates â€“ mutate local state immediately
   const optimisticUpdate = async (id: string, patch: Partial<Task>, apiPatch: Record<string, any>) => {
     const prev = tasks;
     setTasks((cur) => cur.map((t) => (t.id === id ? { ...t, ...patch, updatedAt: new Date().toISOString() } : t)));
@@ -376,7 +382,7 @@ assignedTo: t.assignedTo || "",
           </h1>
           <p className="text-slate-500 mt-1.5 text-sm">
             {filtered.length} {filtered.length === 1 ? "task" : "tasks"}
-            {activeFilterCount > 0 && <span className="text-indigo-600"> · {activeFilterCount} filters active</span>}
+            {activeFilterCount > 0 && <span className="text-indigo-600"> Â· {activeFilterCount} filters active</span>}
           </p>
         </div>
         {isSupervisorOrAbove && (
@@ -397,7 +403,7 @@ assignedTo: t.assignedTo || "",
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks, locations, assignees…"
+            placeholder="Search tasks, locations, assigneesâ€¦"
             className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white"
           />
         </div>
@@ -459,7 +465,7 @@ assignedTo: t.assignedTo || "",
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 flex flex-col items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
-          <div className="text-sm text-slate-500">Loading tasks…</div>
+          <div className="text-sm text-slate-500">Loading tasksâ€¦</div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
@@ -498,7 +504,7 @@ assignedTo: t.assignedTo || "",
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
-              canEdit={isSupervisorOrAbove}
+              canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
@@ -516,7 +522,7 @@ assignedTo: t.assignedTo || "",
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
-              canEdit={isSupervisorOrAbove}
+              canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
@@ -534,7 +540,7 @@ assignedTo: t.assignedTo || "",
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
-              canEdit={isSupervisorOrAbove}
+              canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
@@ -552,7 +558,7 @@ assignedTo: t.assignedTo || "",
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
-              canEdit={isSupervisorOrAbove}
+              canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
@@ -570,7 +576,7 @@ assignedTo: t.assignedTo || "",
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
-              canEdit={isSupervisorOrAbove}
+              canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
@@ -641,7 +647,7 @@ function Section({
   seenPending: Set<string>;
   onEdit: (t: Task) => void;
   onDelete: (id: string) => void;
-  canEdit: boolean;
+canEdit: (t: Task) => boolean;
   canDelete: boolean;
   canManage?: boolean;
   onToast?: (msg: string, type: "success" | "error") => void;
@@ -675,7 +681,7 @@ function Section({
             seenPending={seenPending.has(t.id)}
             onEdit={onEdit}
             onDelete={onDelete}
-            canEdit={canEdit}
+canEdit={canEdit(t)}
             canDelete={canDelete}
             canManage={canManage}
             onToast={onToast}
@@ -774,7 +780,7 @@ function TaskCard({
                         {task.assignees.map((a) => (
                           <span key={a.userId} className="inline-flex items-center gap-1 text-xs bg-slate-100 rounded px-2 py-0.5">
                             <UserIcon className="w-3 h-3" />
-                            {a.name}{a.title ? ` · ${a.title}` : ""}
+                            {a.name}{a.title ? ` Â· ${a.title}` : ""}
                           </span>
                         ))}
                       </div>
@@ -937,7 +943,7 @@ users,
                 rows={3}
                 value={form.description}
                 onChange={(e) => up("description", e.target.value)}
-                placeholder="Add context, instructions, relevant details…"
+                placeholder="Add context, instructions, relevant detailsâ€¦"
                 className="mt-1.5 w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
               />
             </div>
@@ -1036,7 +1042,7 @@ users,
                         }}
                         className="accent-[#F64F0C]"
                       />
-                      <span>{u.name} · {u.title}</span>
+                      <span>{u.name} Â· {u.title}</span>
                     </label>
                   );
                 })}
@@ -1111,3 +1117,4 @@ function toDateTimeLocal(d: Date) {
     d.getMinutes()
   )}`;
 }
+
