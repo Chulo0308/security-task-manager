@@ -201,20 +201,22 @@ export default function ReportsPage() {
 
       // Capture each top-level block (header, summary, KPI row, charts, tables...)
       // as its own image, so a card is never sliced across a page boundary.
-      const sections = Array.from(reportRef.current.children) as HTMLElement[];
+      // The footer is excluded here — it's drawn as real text on every page below.
+      const sections = (Array.from(reportRef.current.children) as HTMLElement[]).filter(
+        (el) => el.getAttribute("data-pdf-footer") !== "true"
+      );
       let y = margin;
       let firstOnPage = true;
+      let pageCount = 1;
 
       for (const section of sections) {
         const canvas = await html2canvas(section, { scale: 2, backgroundColor: "#f8fafc" });
         const imgData = canvas.toDataURL("image/png");
         const imgHeight = (canvas.height * usableWidth) / canvas.width;
 
-        // If this block won't fit in the remaining space, start a fresh page —
-        // unless it's already the first block on the page (avoid infinite loop
-        // for a single block taller than one page).
-        if (!firstOnPage && y + imgHeight > pageHeight - margin) {
+        if (!firstOnPage && y + imgHeight > pageHeight - margin - 12) {
           pdf.addPage();
+          pageCount++;
           y = margin;
           firstOnPage = true;
         }
@@ -222,6 +224,16 @@ export default function ReportsPage() {
         pdf.addImage(imgData, "PNG", margin, y, usableWidth, imgHeight);
         y += imgHeight + gap;
         firstOnPage = false;
+      }
+
+      // Real vector footer, repeated on every page — crisper than a captured
+      // image and never gets orphaned onto its own page.
+      for (let i = 1; i <= pageCount; i++) {
+        pdf.setPage(i);
+        pdf.setFontSize(8);
+        pdf.setTextColor(148, 163, 184);
+        const footerText = `8 Bishopsgate Security Operations  ·  Confidential — Internal Distribution Only  ·  ${reference}  ·  Page ${i} of ${pageCount}`;
+        pdf.text(footerText, pageWidth / 2, pageHeight - 6, { align: "center" });
       }
 
       pdf.save(`8-bishopsgate-report-${from}-to-${to}.pdf`);
@@ -461,8 +473,8 @@ export default function ReportsPage() {
             </div>
           )}
 
-          {/* Footer */}
-          <div className="text-center text-[11px] text-slate-400 pt-4 pb-2">
+                    {/* Footer — excluded from PDF image capture; drawn as real text per page instead */}
+          <div data-pdf-footer="true" className="text-center text-[11px] text-slate-400 pt-4 pb-2">
             8 Bishopsgate Security Operations · Confidential — Internal Distribution Only · {reference}
           </div>
         </div>
