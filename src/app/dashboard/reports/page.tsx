@@ -128,13 +128,13 @@ function KpiCard({ label, value, icon, accent }: { label: string; value: string;
 function DonutCard({ title, icon, data }: { title: string; icon?: React.ReactNode; data: { name: string; value: number }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-7">
+    <div className="bg-white rounded-2xl border border-slate-200 p-8">
       <SectionHeader title={title} icon={icon} />
       <div className="flex items-center gap-8">
-        <div className="relative w-[160px] h-[160px] flex-shrink-0">
+        <div className="relative w-[170px] h-[170px] flex-shrink-0">
           <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie data={data} dataKey="value" nameKey="name" innerRadius={54} outerRadius={78} paddingAngle={3} strokeWidth={0}>
+            <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
+              <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={72} paddingAngle={3} strokeWidth={0}>
                 {data.map((_, i) => (<Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />))}
               </Pie>
               <Tooltip />
@@ -326,7 +326,7 @@ export default function ReportsPage() {
           <div className="bg-white rounded-2xl border border-slate-200 p-7">
             <SectionHeader title="Officer Activity — Assigned vs Completed" icon={<TrendingUp className="w-4 h-4 text-[#F64F0C]" />} />
             <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={data.officerActivity} barGap={6} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+<BarChart data={data.officerActivity} barGap={6} margin={{ top: 16, right: 20, left: 10, bottom: 10 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
