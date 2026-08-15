@@ -44,8 +44,9 @@ export const tasks = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     dueAt: timestamp("due_at"),
     completedAt: timestamp("completed_at"),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    overdueNotifiedAt: timestamp("overdue_notified_at"),
   },
   (t) => [
     index("tasks_status_idx").on(t.status),
@@ -150,7 +151,8 @@ export const reminders = pgTable(
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    createdAt: timestamp("created_at").notNull().defaultNow(),
+        createdAt: timestamp("created_at").notNull().defaultNow(),
+    notifiedAt: timestamp("notified_at"),
   },
   (t) => [
     index("reminders_resource_idx").on(t.resourceType, t.resourceId),
