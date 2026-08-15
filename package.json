@@ -14,7 +14,7 @@
     "date-fns": "^4.4.0",
     "dotenv": "^17.4.2",
     "drizzle-orm": "0.45.2",
-    "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^2.3.8",
     "jose": "^6.2.3",
     "jspdf": "^4.2.1",
     "lucide-react": "^1.25.0",

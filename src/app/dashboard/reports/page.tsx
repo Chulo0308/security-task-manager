@@ -118,7 +118,7 @@ export default function ReportsPage() {
     if (!reportRef.current) return;
     setExporting(true);
     try {
-      const html2canvas = (await import("html2canvas")).default;
+      const html2canvas = (await import("html2canvas-pro")).default;
       const { jsPDF } = await import("jspdf");
 
       const canvas = await html2canvas(reportRef.current, { scale: 2, backgroundColor: "#f8fafc" });
