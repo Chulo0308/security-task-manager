@@ -1,8 +1,11 @@
 ﻿"use client";
 import { useState, useRef } from "react";
-import { BarChart3, Loader2, TrendingUp, Eye, Award, Megaphone, Download } from "lucide-react";
 import {
-  PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
+  BarChart3, Loader2, TrendingUp, Eye, Award, Megaphone, Download,
+  ListChecks, CheckCircle2, AlertTriangle,
+} from "lucide-react";
+import {
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 
@@ -26,23 +29,34 @@ type ReportData = {
   officerSeenActivity: { userId: string; name: string; title: string; tasksSeenCount: number; annsSeenCount: number; totalSeenCount: number }[];
 };
 
+const NAVY = "#1F3864";
+const ORANGE = "#F64F0C";
 const BRAND_COLORS = ["#F64F0C", "#1F3864", "#ff6a2b", "#2a4a80", "#fbbf24", "#94a3b8"];
 
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
-}
+function todayStr() { return new Date().toISOString().slice(0, 10); }
 function monthAgoStr() {
   const d = new Date();
   d.setMonth(d.getMonth() - 1);
   return d.toISOString().slice(0, 10);
 }
+function formatUKDate(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+function formatUKDateNow() {
+  const d = new Date();
+  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
+}
+function titleCase(s: string) {
+  return s.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+}
 function toChartData(obj: Record<string, number>) {
-  return Object.entries(obj).map(([name, value]) => ({ name, value }));
+  return Object.entries(obj).map(([name, value]) => ({ name: titleCase(name), value }));
 }
 
 function buildExecutiveSummary(data: ReportData): string[] {
   const points: string[] = [];
-  points.push(`Across the period ${data.range.from} to ${data.range.to}, ${data.totalTasks} tasks were logged with a completion rate of ${data.completionRate}%.`);
+  points.push(`Across the period ${formatUKDate(data.range.from)} to ${formatUKDate(data.range.to)}, ${data.totalTasks} tasks were logged with a completion rate of ${data.completionRate}%.`);
   if (data.overdueCount > 0) {
     points.push(`${data.overdueCount} task${data.overdueCount === 1 ? " is" : "s are"} currently overdue and require${data.overdueCount === 1 ? "s" : ""} immediate attention.`);
   } else {
@@ -78,8 +92,71 @@ function buildExecutiveSummary(data: ReportData): string[] {
 function FieldRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline">
-      <span className="text-white/50 uppercase text-xs tracking-wide w-24 flex-shrink-0 whitespace-nowrap">{label}:</span>
-      <span className="font-medium ml-2">{value}</span>
+      <span className="text-white/50 uppercase text-[11px] tracking-wide w-24 flex-shrink-0 whitespace-nowrap">{label}:</span>
+      <span className="font-medium ml-2 text-[13px]">{value}</span>
+    </div>
+  );
+}
+
+function SectionHeader({ title, icon }: { title: string; icon?: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 mb-4 pb-3 border-b border-slate-100">
+      {icon}
+      <h2 className="text-[11px] font-bold text-slate-500 uppercase tracking-[0.15em]">{title}</h2>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, icon, accent }: { label: string; value: string; icon: React.ReactNode; accent: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+      <div className="h-1" style={{ background: accent }} />
+      <div className="p-5">
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center mb-3"
+          style={{ background: accent + "1A", color: accent }}
+        >
+          {icon}
+        </div>
+        <div className="text-3xl font-bold text-slate-900 tabular-nums leading-none">{value}</div>
+        <div className="text-sm text-slate-500 mt-2">{label}</div>
+      </div>
+    </div>
+  );
+}
+
+function DonutCard({ title, icon, data }: { title: string; icon?: React.ReactNode; data: { name: string; value: number }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return (
+    <div className="bg-white rounded-2xl border border-slate-200 p-5">
+      <SectionHeader title={title} icon={icon} />
+      <div className="flex items-center gap-5">
+        <div className="relative w-[150px] h-[150px] flex-shrink-0">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie data={data} dataKey="value" nameKey="name" innerRadius={50} outerRadius={74} paddingAngle={2} strokeWidth={0}>
+                {data.map((_, i) => (<Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+            <div className="text-2xl font-bold text-slate-900 tabular-nums">{total}</div>
+            <div className="text-[9px] uppercase tracking-wide text-slate-400">Total</div>
+          </div>
+        </div>
+        <div className="flex-1 min-w-0 space-y-2">
+          {data.map((d, i) => (
+            <div key={d.name} className="flex items-center justify-between text-sm">
+              <span className="flex items-center gap-2 min-w-0">
+                <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: BRAND_COLORS[i % BRAND_COLORS.length] }} />
+                <span className="text-slate-600 truncate">{d.name}</span>
+              </span>
+              <span className="font-semibold text-slate-900 tabular-nums ml-2">{d.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -139,9 +216,10 @@ export default function ReportsPage() {
     }
   };
 
+  const reference = data ? `RPT-${data.range.from.replace(/-/g, "")}-${data.range.to.replace(/-/g, "")}` : "";
+
   return (
     <div className="p-6 max-w-6xl mx-auto">
-      {/* Toolbar — NOT captured in the PDF */}
       <div className="flex items-center gap-3 mb-4">
         <BarChart3 className="w-5 h-5 text-[#F64F0C]" />
         <h1 className="text-lg font-semibold text-slate-900">Reports</h1>
@@ -175,25 +253,30 @@ export default function ReportsPage() {
         <div className="mb-6 px-4 py-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm">{error}</div>
       )}
 
-      {/* Everything below IS captured in the PDF */}
       {data && (
-        <div ref={reportRef} className="space-y-6 animate-rise bg-slate-50 p-1">
+        <div ref={reportRef} className="space-y-5 animate-rise bg-slate-50 p-1">
           {/* Formal document header */}
           <div className="brand-hero rounded-2xl p-8 text-white relative overflow-hidden">
             <div className="relative z-10">
-              <div className="flex items-center gap-4 pb-6 mb-6 border-b border-white/15">
-                <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center p-2.5 flex-shrink-0">
-                  <img src="/logo.png" alt="8 Bishopsgate" className="w-full h-full object-contain" />
+              <div className="flex items-center justify-between gap-4 pb-6 mb-6 border-b border-white/15">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-white/10 flex items-center justify-center p-2.5 flex-shrink-0">
+                    <img src="/logo.png" alt="8 Bishopsgate" className="w-full h-full object-contain" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] tracking-[0.25em] text-white/50 uppercase font-medium">8 Bishopsgate Security Operations</div>
+                    <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Executive Security Report</h1>
+                  </div>
                 </div>
-                <div>
-                  <div className="text-[11px] tracking-[0.25em] text-white/50 uppercase font-medium">8 Bishopsgate Security Operations</div>
-                  <h1 className="text-2xl font-semibold tracking-tight mt-0.5">Executive Security Report</h1>
+                <div className="text-right hidden sm:block">
+                  <div className="text-[10px] uppercase tracking-wide text-white/40">Report Ref.</div>
+                  <div className="text-xs font-mono text-white/70">{reference}</div>
                 </div>
               </div>
-              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+              <div className="grid sm:grid-cols-2 gap-x-8 gap-y-3">
                 <FieldRow label="Subject" value="Operational performance, engagement and officer activity" />
-                <FieldRow label="Period" value={`${data.range.from} — ${data.range.to}`} />
-                <FieldRow label="Prepared" value={new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} />
+                <FieldRow label="Period" value={`${formatUKDate(data.range.from)} — ${formatUKDate(data.range.to)}`} />
+                <FieldRow label="Prepared" value={formatUKDateNow()} />
                 <FieldRow label="Classification" value="Internal — Management" />
               </div>
             </div>
@@ -201,101 +284,71 @@ export default function ReportsPage() {
 
           {/* Executive summary */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Executive summary</h2>
-            <ul className="space-y-2">
+            <SectionHeader title="Executive Summary" />
+            <ul className="space-y-2.5">
               {buildExecutiveSummary(data).map((point, i) => (
-                <li key={i} className="text-sm text-slate-700 flex gap-2">
-                  <span className="text-[#F64F0C] font-bold flex-shrink-0">•</span>
+                <li key={i} className="text-sm text-slate-700 flex gap-2.5 leading-relaxed">
+                  <span className="text-[#F64F0C] font-bold flex-shrink-0">—</span>
                   <span>{point}</span>
                 </li>
               ))}
             </ul>
           </div>
 
+          {/* KPIs */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="text-3xl font-bold text-slate-900">{data.totalTasks}</div>
-              <div className="text-sm text-slate-500 mt-1">Total tasks</div>
-            </div>
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="text-3xl font-bold text-[#F64F0C]">{data.completionRate}%</div>
-              <div className="text-sm text-slate-500 mt-1">Completion rate</div>
-            </div>
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="text-3xl font-bold text-rose-600">{data.overdueCount}</div>
-              <div className="text-sm text-slate-500 mt-1">Overdue</div>
-            </div>
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="text-3xl font-bold text-slate-900">{data.announcements.total}</div>
-              <div className="text-sm text-slate-500 mt-1">Announcements</div>
-            </div>
+            <KpiCard label="Total tasks" value={String(data.totalTasks)} icon={<ListChecks className="w-4.5 h-4.5" />} accent={NAVY} />
+            <KpiCard label="Completion rate" value={`${data.completionRate}%`} icon={<CheckCircle2 className="w-4.5 h-4.5" />} accent={ORANGE} />
+            <KpiCard label="Overdue" value={String(data.overdueCount)} icon={<AlertTriangle className="w-4.5 h-4.5" />} accent="#e11d48" />
+            <KpiCard label="Announcements" value={String(data.announcements.total)} icon={<Megaphone className="w-4.5 h-4.5" />} accent="#2a4a80" />
           </div>
 
+          {/* Donut charts */}
           <div className="grid lg:grid-cols-2 gap-4">
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Task status breakdown</h2>
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={toChartData(data.byStatus)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                    {toChartData(data.byStatus).map((_, i) => (<Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />))}
-                  </Pie>
-                  <Tooltip /><Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Priority breakdown</h2>
-              <ResponsiveContainer width="100%" height={260}>
-                <PieChart>
-                  <Pie data={toChartData(data.byPriority)} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                    {toChartData(data.byPriority).map((_, i) => (<Cell key={i} fill={BRAND_COLORS[i % BRAND_COLORS.length]} />))}
-                  </Pie>
-                  <Tooltip /><Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            <DonutCard title="Task Status Breakdown" data={toChartData(data.byStatus)} />
+            <DonutCard title="Priority Breakdown" data={toChartData(data.byPriority)} />
           </div>
 
-          <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-            <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-[#F64F0C]" /> Officer activity — assigned vs completed
-            </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={data.officerActivity}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 11 }} />
-                <YAxis allowDecimals={false} />
-                <Tooltip /><Legend />
-                <Bar dataKey="assigned" fill="#1F3864" radius={[4, 4, 0, 0]} name="Assigned" />
-                <Bar dataKey="completed" fill="#F64F0C" radius={[4, 4, 0, 0]} name="Completed" />
+          {/* Officer comparison */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <SectionHeader title="Officer Activity — Assigned vs Completed" icon={<TrendingUp className="w-4 h-4 text-[#F64F0C]" />} />
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={data.officerActivity} barGap={4}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#eef2f7" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#64748b" }} axisLine={{ stroke: "#e2e8f0" }} tickLine={false} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: "#64748b" }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: "#f8fafc" }} />
+                <Bar dataKey="assigned" fill={NAVY} radius={[4, 4, 0, 0]} name="Assigned" maxBarSize={28} />
+                <Bar dataKey="completed" fill={ORANGE} radius={[4, 4, 0, 0]} name="Completed" maxBarSize={28} />
               </BarChart>
             </ResponsiveContainer>
+            <div className="flex items-center gap-4 mt-2 justify-center text-xs text-slate-500">
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: NAVY }} />Assigned</span>
+              <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-full" style={{ background: ORANGE }} />Completed</span>
+            </div>
           </div>
 
-          <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-            <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-              <Megaphone className="w-4 h-4 text-[#F64F0C]" /> Announcement classification
-            </h2>
-            <div className="flex flex-wrap gap-3">
+          {/* Announcement classification */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <SectionHeader title="Announcement Classification" icon={<Megaphone className="w-4 h-4 text-[#F64F0C]" />} />
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {Object.entries(data.announcements.byPriority).map(([priority, count]) => (
-                <div key={priority} className="flex-1 min-w-[120px] bg-slate-50 rounded-lg p-4 text-center">
-                  <div className="text-2xl font-bold text-slate-900">{count}</div>
-                  <div className="text-xs uppercase tracking-wide text-slate-500 mt-1">{priority}</div>
+                <div key={priority} className="bg-slate-50 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold text-slate-900 tabular-nums">{count}</div>
+                  <div className="text-[10px] uppercase tracking-wide text-slate-500 mt-1">{titleCase(priority)}</div>
                 </div>
               ))}
-              <div className="flex-1 min-w-[120px] bg-slate-50 rounded-lg p-4 text-center">
-                <div className="text-2xl font-bold text-[#F64F0C]">{data.announcements.avgSeenRatePercent}%</div>
-                <div className="text-xs uppercase tracking-wide text-slate-500 mt-1">Avg seen rate</div>
+              <div className="bg-slate-50 rounded-xl p-4 text-center">
+                <div className="text-2xl font-bold text-[#F64F0C] tabular-nums">{data.announcements.avgSeenRatePercent}%</div>
+                <div className="text-[10px] uppercase tracking-wide text-slate-500 mt-1">Avg Seen Rate</div>
               </div>
             </div>
           </div>
 
+          {/* Highlights */}
           <div className="grid lg:grid-cols-3 gap-4">
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="w-4 h-4 text-[#F64F0C]" />
-                <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Best response</h3>
-              </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <div className="flex items-center gap-2 mb-2 text-slate-400"><Award className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Best Response</h3></div>
               {data.bestResponse ? (
                 <>
                   <div className="text-lg font-bold text-slate-900">{data.bestResponse.name}</div>
@@ -303,11 +356,8 @@ export default function ReportsPage() {
                 </>
               ) : (<div className="text-sm text-slate-400">No completions in range</div>)}
             </div>
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <Eye className="w-4 h-4 text-[#F64F0C]" />
-                <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Most-seen task</h3>
-              </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <div className="flex items-center gap-2 mb-2 text-slate-400"><Eye className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Most-Seen Task</h3></div>
               {data.mostSeenTask ? (
                 <>
                   <div className="text-sm font-semibold text-slate-900 line-clamp-2">{data.mostSeenTask.title}</div>
@@ -315,11 +365,8 @@ export default function ReportsPage() {
                 </>
               ) : (<div className="text-sm text-slate-400">No views recorded</div>)}
             </div>
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <div className="flex items-center gap-2 mb-2">
-                <Eye className="w-4 h-4 text-[#F64F0C]" />
-                <h3 className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Most-seen announcement</h3>
-              </div>
+            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <div className="flex items-center gap-2 mb-2 text-slate-400"><Eye className="w-4 h-4 text-[#F64F0C]" /><h3 className="text-[10px] font-bold uppercase tracking-[0.15em]">Most-Seen Announcement</h3></div>
               {data.mostSeenAnnouncement ? (
                 <>
                   <div className="text-sm font-semibold text-slate-900 line-clamp-2">{data.mostSeenAnnouncement.title}</div>
@@ -329,78 +376,82 @@ export default function ReportsPage() {
             </div>
           </div>
 
+          {/* Weighted leaderboard */}
           {data.weightedRank.length > 0 && (
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <Award className="w-4 h-4 text-[#F64F0C]" /> Weighted completion leaderboard
-              </h2>
-              <p className="text-xs text-slate-400 mb-3">Critical tasks score higher than routine ones</p>
+            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <SectionHeader title="Weighted Completion Leaderboard" icon={<Award className="w-4 h-4 text-[#F64F0C]" />} />
+              <p className="text-xs text-slate-400 mb-3 -mt-2">Critical tasks score higher than routine ones</p>
               <div className="space-y-2">
                 {data.weightedRank.map((o, i) => (
-                  <div key={o.userId} className="flex items-center gap-3 px-3 py-2 bg-slate-50 rounded-lg">
+                  <div key={o.userId} className="flex items-center gap-3 px-3 py-2.5 bg-slate-50 rounded-lg">
                     <div className="w-6 h-6 rounded-full bg-[#F64F0C] text-white text-xs font-bold flex items-center justify-center flex-shrink-0">{i + 1}</div>
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium text-slate-900">{o.name}</div>
                       <div className="text-xs text-slate-500">{o.title}</div>
                     </div>
-                    <div className="text-sm font-bold text-slate-900">{o.weightedScore} pts</div>
+                    <div className="text-sm font-bold text-slate-900 tabular-nums">{o.weightedScore} pts</div>
                   </div>
                 ))}
               </div>
             </div>
           )}
 
-          <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-            <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3">Officer activity detail</h2>
+          {/* Officer activity table */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5">
+            <SectionHeader title="Officer Activity Detail" />
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-slate-500 border-b border-slate-100">
-                  <th className="pb-2 font-medium">Officer</th>
-                  <th className="pb-2 font-medium">Assigned</th>
-                  <th className="pb-2 font-medium">Completed</th>
-                  <th className="pb-2 font-medium">Avg response</th>
+                <tr className="text-left text-slate-500 bg-slate-50">
+                  <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide rounded-l-lg">Officer</th>
+                  <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right">Assigned</th>
+                  <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right">Completed</th>
+                  <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right rounded-r-lg">Avg Response</th>
                 </tr>
               </thead>
               <tbody>
-                {data.officerActivity.map((o) => (
-                  <tr key={o.userId} className="border-b border-slate-50">
-                    <td className="py-2">{o.name}</td>
-                    <td className="py-2">{o.assigned}</td>
-                    <td className="py-2">{o.completed}</td>
-                    <td className="py-2">{o.avgResponseDays === null ? "—" : `${o.avgResponseDays > 0 ? "+" : ""}${o.avgResponseDays} days`}</td>
+                {data.officerActivity.map((o, i) => (
+                  <tr key={o.userId} className={i % 2 === 1 ? "bg-slate-50/60" : ""}>
+                    <td className="py-2.5 px-3 font-medium text-slate-800">{o.name}</td>
+                    <td className="py-2.5 px-3 text-right tabular-nums">{o.assigned}</td>
+                    <td className="py-2.5 px-3 text-right tabular-nums">{o.completed}</td>
+                    <td className="py-2.5 px-3 text-right tabular-nums">{o.avgResponseDays === null ? "—" : `${o.avgResponseDays > 0 ? "+" : ""}${o.avgResponseDays}d`}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
 
+          {/* Officer seen activity */}
           {data.officerSeenActivity.length > 0 && (
-            <div className="card-brand bg-white rounded-2xl border border-slate-200 p-5">
-              <h2 className="text-sm font-semibold text-slate-700 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <Eye className="w-4 h-4 text-[#F64F0C]" /> Officer engagement (items viewed)
-              </h2>
+            <div className="bg-white rounded-2xl border border-slate-200 p-5">
+              <SectionHeader title="Officer Engagement — Items Viewed" icon={<Eye className="w-4 h-4 text-[#F64F0C]" />} />
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-slate-500 border-b border-slate-100">
-                    <th className="pb-2 font-medium">Officer</th>
-                    <th className="pb-2 font-medium">Tasks seen</th>
-                    <th className="pb-2 font-medium">Announcements seen</th>
-                    <th className="pb-2 font-medium">Total</th>
+                  <tr className="text-left text-slate-500 bg-slate-50">
+                    <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide rounded-l-lg">Officer</th>
+                    <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right">Tasks Seen</th>
+                    <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right">Announcements Seen</th>
+                    <th className="py-2.5 px-3 font-semibold text-xs uppercase tracking-wide text-right rounded-r-lg">Total</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.officerSeenActivity.map((o) => (
-                    <tr key={o.userId} className="border-b border-slate-50">
-                      <td className="py-2">{o.name}</td>
-                      <td className="py-2">{o.tasksSeenCount}</td>
-                      <td className="py-2">{o.annsSeenCount}</td>
-                      <td className="py-2 font-semibold">{o.totalSeenCount}</td>
+                  {data.officerSeenActivity.map((o, i) => (
+                    <tr key={o.userId} className={i % 2 === 1 ? "bg-slate-50/60" : ""}>
+                      <td className="py-2.5 px-3 font-medium text-slate-800">{o.name}</td>
+                      <td className="py-2.5 px-3 text-right tabular-nums">{o.tasksSeenCount}</td>
+                      <td className="py-2.5 px-3 text-right tabular-nums">{o.annsSeenCount}</td>
+                      <td className="py-2.5 px-3 text-right font-semibold tabular-nums">{o.totalSeenCount}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
+
+          {/* Footer */}
+          <div className="text-center text-[11px] text-slate-400 pt-3 pb-1">
+            8 Bishopsgate Security Operations · Confidential — Internal Distribution Only · {reference}
+          </div>
         </div>
       )}
     </div>
