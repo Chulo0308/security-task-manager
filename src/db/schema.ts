@@ -254,3 +254,13 @@ export const activityLog = pgTable(
     index("activity_log_actor_idx").on(t.actorId),
   ]
 );
+export const savedReports = pgTable("saved_reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 200 }).notNull(),
+  fromDate: varchar("from_date", { length: 10 }).notNull(),
+  toDate: varchar("to_date", { length: 10 }).notNull(),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
