@@ -100,6 +100,13 @@ const PRIORITY_STYLES: Record<string, string> = {
   low: "bg-sky-50 text-sky-700 border-sky-200",
 };
 
+const SEVERITY_GLOW: Record<string, string> = {
+  critical: "glow-severity-red",
+  high: "glow-severity-amber",
+  medium: "glow-severity-yellow",
+  low: "glow-severity-green",
+};
+
 const STATUS_STYLES: Record<string, { label: string; cls: string; dot: string }> = {
   open: { label: "Open", cls: "bg-slate-100 text-slate-700 border-slate-200", dot: "bg-slate-400" },
   in_progress: { label: "In progress", cls: "bg-blue-50 text-blue-700 border-blue-200", dot: "bg-blue-500" },
@@ -839,7 +846,7 @@ function Section({
           {count}
         </span>
       </div>
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden divide-y divide-slate-100">
+      <div className="space-y-3">
         {sorted.map((t) => (
           <TaskCard
             key={t.id}
@@ -902,9 +909,10 @@ function TaskCard({
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const glowClass = SEVERITY_GLOW[task.priority] || "";
 
   return (
-    <div className={`px-5 py-4 hover:bg-slate-50/60 transition-colors group ${selected ? "bg-indigo-50/50" : ""}`}>
+    <div className={`shine-once bg-white rounded-2xl border border-slate-200 px-5 py-4 hover:bg-slate-50/60 transition-colors group ${glowClass} ${selected ? "bg-indigo-50/50" : ""}`}>
       <div className="flex items-start gap-4">
         {selectable && (
           <input
@@ -1312,6 +1320,8 @@ function toDateTimeLocal(d: Date) {
     d.getMinutes()
   )}`;
 }
+
+
 
 
 
