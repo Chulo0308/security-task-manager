@@ -265,3 +265,16 @@ export const savedReports = pgTable("saved_reports", {
     .references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+export const taskTemplates = pgTable("task_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: varchar("name", { length: 200 }).notNull(),
+  title: varchar("title", { length: 300 }).notNull(),
+  description: text("description").notNull().default(""),
+  priority: varchar("priority", { length: 20 }).notNull().default("medium"),
+  category: varchar("category", { length: 60 }).notNull().default("general"),
+  location: varchar("location", { length: 200 }),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
