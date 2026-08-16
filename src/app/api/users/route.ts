@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq, desc } from "drizzle-orm";
 import { getSession, isAdmin, hashPassword } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -24,19 +25,11 @@ export async function GET(req: NextRequest) {
     .from(users)
     .orderBy(desc(users.createdAt));
 
-  // Presence visibility rules:
-  //  - administrators can see anyone's last-seen
-  //  - supervisors can see officers/operators, but never managers (admin)
-  //  - operators/guards see no presence data
   const now = Date.now();
   const ONLINE_WINDOW = 3 * 60 * 1000;
   const requesterIsAdmin = session.role === "admin";
   const requesterIsSupervisor = session.role === "supervisor";
 
-    // Contact-detail visibility:
-  //  - supervisors and admins see everyone's email + phone
-  //  - guards/operators see contact details ONLY for supervisors and admins
-  //    (senior staff they may need to reach), never for peer officers
   const requesterIsPrivileged = requesterIsAdmin || requesterIsSupervisor;
 
   const mapped = rows.map((u) => {
@@ -48,7 +41,6 @@ export async function GET(req: NextRequest) {
     const { lastSeenAt: _omit, ...rest } = u;
     void _omit;
 
-    // Decide whether this requester may see THIS person's contact details.
     const targetIsSenior = u.role === "admin" || u.role === "supervisor";
     const canSeeContact = requesterIsPrivileged || targetIsSenior;
     const email = canSeeContact ? rest.email : null;
@@ -88,6 +80,16 @@ export async function POST(req: NextRequest) {
       })
       .returning();
     const { passwordHash, ...safe } = row;
+
+    logActivity({
+      actorId: session.id,
+      action: "created",
+      resourceType: "user",
+      resourceId: row.id,
+      resourceTitle: row.name,
+      details: `role: ${row.role}`,
+    }).catch(() => {});
+
     return NextResponse.json({ user: safe }, { status: 201 });
   } catch (e: any) {
     if (String(e?.message || "").includes("users_email_key")) {
@@ -105,7 +107,6 @@ export async function PUT(req: NextRequest) {
   const id = String(body.id || "");
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
 
-  // Non-admins can only update themselves and only certain fields
   const isAdminUser = isAdmin(session);
   if (!isAdminUser && session.id !== id) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -131,5 +132,16 @@ export async function PUT(req: NextRequest) {
   const [row] = await db.update(users).set(update).where(eq(users.id, id)).returning();
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const { passwordHash, ...safe } = row;
+
+  if (isAdminUser) {
+    logActivity({
+      actorId: session.id,
+      action: "updated",
+      resourceType: "user",
+      resourceId: row.id,
+      resourceTitle: row.name,
+    }).catch(() => {});
+  }
+
   return NextResponse.json({ user: safe });
 }
