@@ -18,6 +18,7 @@ import {
   Calendar,
   Tag,
   ListChecks,
+  ListTodo,
   MoreVertical,
   Users as UsersBulkIcon,
 } from "lucide-react";
@@ -268,6 +269,24 @@ export default function TasksPage() {
         next.delete(task.id);
         return next;
       });
+    }
+  };
+
+  const importToTodo = async (task: Task) => {
+    try {
+      const res = await fetch("/api/todos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: task.title,
+          priority: task.priority,
+          dueAt: task.dueAt,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      flashToast("Added to your to-do list", "success");
+    } catch {
+      flashToast("Failed to add to to-do list", "error");
     }
   };
 
@@ -625,6 +644,7 @@ export default function TasksPage() {
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
+              onImportToTodo={importToTodo}
               canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
@@ -646,6 +666,7 @@ export default function TasksPage() {
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
+              onImportToTodo={importToTodo}
               canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
@@ -667,6 +688,7 @@ export default function TasksPage() {
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
+              onImportToTodo={importToTodo}
               canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
@@ -688,6 +710,7 @@ export default function TasksPage() {
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
+              onImportToTodo={importToTodo}
               canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
@@ -709,6 +732,7 @@ export default function TasksPage() {
               seenPending={seenPending}
               onEdit={openEdit}
               onDelete={deleteTask}
+              onImportToTodo={importToTodo}
               canEdit={canEditTask}
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
@@ -768,6 +792,7 @@ function Section({
   seenPending,
   onEdit,
   onDelete,
+  onImportToTodo,
   canEdit,
   canDelete,
   canManage = false,
@@ -786,6 +811,7 @@ function Section({
   seenPending: Set<string>;
   onEdit: (t: Task) => void;
   onDelete: (id: string) => void;
+  onImportToTodo: (t: Task) => void;
   canEdit: (t: Task) => boolean;
   canDelete: boolean;
   canManage?: boolean;
@@ -823,6 +849,7 @@ function Section({
             seenPending={seenPending.has(t.id)}
             onEdit={onEdit}
             onDelete={onDelete}
+            onImportToTodo={onImportToTodo}
             canEdit={canEdit(t)}
             canDelete={canDelete}
             canManage={canManage}
@@ -844,6 +871,7 @@ function TaskCard({
   seenPending,
   onEdit,
   onDelete,
+  onImportToTodo,
   canEdit,
   canDelete,
   canManage,
@@ -858,6 +886,7 @@ function TaskCard({
   seenPending: boolean;
   onEdit: (t: Task) => void;
   onDelete: (id: string) => void;
+  onImportToTodo: (t: Task) => void;
   canEdit: boolean;
   canDelete: boolean;
   canManage: boolean;
@@ -1029,6 +1058,13 @@ function TaskCard({
                   <Edit3 className="w-4 h-4" />
                 </button>
               )}
+              <button
+                onClick={() => onImportToTodo(task)}
+                className="p-1.5 rounded-md hover:bg-orange-100 text-[#F64F0C] transition-colors"
+                title="Add to my to-do"
+              >
+                <ListTodo className="w-4 h-4" />
+              </button>
               {canDelete && (
                 <button
                   onClick={() => onDelete(task.id)}
@@ -1276,3 +1312,8 @@ function toDateTimeLocal(d: Date) {
     d.getMinutes()
   )}`;
 }
+
+
+
+
+
