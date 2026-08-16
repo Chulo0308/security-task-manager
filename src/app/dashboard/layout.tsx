@@ -17,6 +17,7 @@ import {
   Download,
   BarChart3,
   History,
+  ShieldCheck,
   ChevronRight,
 } from "lucide-react";
 import { AuthProvider, useAuth, useRole } from "@/components/AuthProvider";
@@ -42,6 +43,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/dashboard/reports", label: "Reports", icon: <BarChart3 className="w-5 h-5" />, supervisorOnly: true },
   { href: "/dashboard/activity", label: "Activity Log", icon: <History className="w-5 h-5" />, adminOnly: true },
   { href: "/dashboard/download", label: "App Download", icon: <Download className="w-5 h-5" /> },
+  { href: "/dashboard/account", label: "My Account", icon: <ShieldCheck className="w-5 h-5" /> },
 ];
 
 const ROLE_LABELS: Record<string, string> = {
@@ -261,4 +263,5 @@ function Watermark() {
     </div>
   );
 }
+
 
