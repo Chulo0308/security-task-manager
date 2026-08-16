@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { AuthProvider, useAuth, useRole } from "@/components/AuthProvider";
 import { NotificationToggle } from "@/components/NotificationToggle";
+import { GlobalSearch } from "@/components/GlobalSearch";
 import { useRouter } from "next/navigation";
 
 type NavItem = {
@@ -186,7 +187,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
       <Sidebar open={open} onClose={() => setOpen(false)} />
       <div className="flex-1 min-w-0 flex flex-col">
         {/* Top bar (mobile only) */}
-        <div className="lg:hidden sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+        <div className="sticky top-0 z-30 bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => setOpen(true)}
             className="p-2 -ml-2 rounded-lg hover:bg-slate-100"
@@ -194,11 +195,13 @@ function DashboardShell({ children }: { children: ReactNode }) {
           >
             <Menu className="w-5 h-5 text-slate-700" />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex-1 min-w-0">
+            <GlobalSearch />
+          </div>
+          <div className="hidden lg:flex items-center gap-2">
             <Building2 className="w-5 h-5 text-indigo-600" />
             <span className="text-sm font-semibold">8 Bishopsgate</span>
           </div>
-          <div className="w-8" />
         </div>
 <main className="flex-1 min-w-0">{children}</main>
         <Watermark />
@@ -222,7 +225,7 @@ function Watermark() {
     return () => clearInterval(t);
   }, []);
   if (!user) return null;
-  const label = `${user.name} · ${user.email} · ${stamp}`;
+  const label = `${user.name} Â· ${user.email} Â· ${stamp}`;
   const tiles = Array.from({ length: 60 });
   return (
     <div
@@ -258,3 +261,4 @@ function Watermark() {
     </div>
   );
 }
+
