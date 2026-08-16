@@ -19,6 +19,7 @@ import {
   Tag,
   ListChecks,
   MoreVertical,
+  Users as UsersBulkIcon,
 } from "lucide-react";
 import { useAuth, useRole } from "@/components/AuthProvider";
 import { SeenMarker, type SeenReceipt } from "@/components/SeenMarker";
@@ -49,7 +50,7 @@ type Task = {
   seenBy: SeenReceipt[];
   seenCount: number;
   seenByCurrentUser: boolean;
-    attachments: AttachmentMeta[];
+  attachments: AttachmentMeta[];
   reminders: ReminderItem[];
   assignees?: { userId: string; name: string; title: string; role: string }[];
 };
@@ -61,7 +62,7 @@ type FormState = {
   status: string;
   category: string;
   location: string;
-    assignedTo: string;
+  assignedTo: string;
   assigneeIds: string[];
   dueAt: string;
 };
@@ -91,26 +92,6 @@ const CATEGORIES = [
   { value: "compliance", label: "Compliance" },
 ];
 
-const LOCATIONS = [
-  "Lobby â€“ Main Entrance",
-  "Reception â€“ Lobby Entrance",
-  "Loading Bay â€“ Undershaft Road",
-  "Undershaft Road Perimeter",
-  "Plant Room B1",
-  "Plant Room B2",
-  "Car Park B1/B2",
-  "Control Room",
-  "Level 1 â€“ Auditorium",
-  "Level 2 Concourse",
-  "Level 12 â€“ East Lift Lobby",
-  "Level 34",
-  "Level 48 â€“ Board Room",
-  "Rooftop Access Point",
-  "Bin Store â€“ Rear of Building",
-  "Admin Office",
-  "All Floors",
-];
-
 const PRIORITY_STYLES: Record<string, string> = {
   critical: "bg-rose-50 text-rose-700 border-rose-200",
   high: "bg-orange-50 text-orange-700 border-orange-200",
@@ -130,7 +111,7 @@ export default function TasksPage() {
   const [floors, setFloors] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<string[]>([]);
   const [priorityFilter, setPriorityFilter] = useState<string[]>([]);
   const [dueTodayFilter, setDueTodayFilter] = useState(false);
   const [overdueFilter, setOverdueFilter] = useState(false);
@@ -142,8 +123,10 @@ export default function TasksPage() {
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
   const [seenPending, setSeenPending] = useState<Set<string>>(new Set());
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkWorking, setBulkWorking] = useState(false);
   const { user } = useAuth();
-    const { isSupervisorOrAbove, isAdmin } = useRole();
+  const { isSupervisorOrAbove, isAdmin } = useRole();
   const canEditTask = (t: Task) =>
     isSupervisorOrAbove ||
     t.createdBy === user?.id ||
@@ -151,7 +134,7 @@ export default function TasksPage() {
     (t.assignees ?? []).some((a) => a.userId === user?.id);
   const users = useUsers();
 
-    const loadTasks = async () => {
+  const loadTasks = async () => {
     const res = await fetch("/api/tasks", { cache: "no-store" });
     const data = await res.json();
     setTasks(data.tasks || []);
@@ -188,14 +171,9 @@ export default function TasksPage() {
       if (overdueFilter) {
         if (!t.dueAt || !isPast(new Date(t.dueAt)) || t.status === "completed" || t.status === "cancelled") return false;
       }
-      // Non-supervisors see only tasks assigned to them (or with no assignee)
-      if (!isSupervisorOrAbove && t.assignedTo && t.assignedTo !== "") {
-        // We don't have current user id easily; rely on assigneeName match.
-        // Actually we need the id, but since we can filter client-side by assigneeName, it's fine for UX.
-      }
       return true;
     });
-}, [tasks, search, statusFilter, priorityFilter, categoryFilter, dueTodayFilter, overdueFilter, isSupervisorOrAbove]);
+  }, [tasks, search, statusFilter, priorityFilter, categoryFilter, dueTodayFilter, overdueFilter, isSupervisorOrAbove]);
 
   const grouped = useMemo(() => {
     const overdue = filtered.filter(
@@ -208,7 +186,6 @@ export default function TasksPage() {
     return { overdue, inProgress, open, completed, cancelled };
   }, [filtered]);
 
-  // Optimistic updates â€“ mutate local state immediately
   const optimisticUpdate = async (id: string, patch: Partial<Task>, apiPatch: Record<string, any>) => {
     const prev = tasks;
     setTasks((cur) => cur.map((t) => (t.id === id ? { ...t, ...patch, updatedAt: new Date().toISOString() } : t)));
@@ -313,10 +290,7 @@ export default function TasksPage() {
 
   const openCreate = () => {
     setEditingId(null);
-    setForm({
-      ...EMPTY_FORM,
-      // Pre-assign to self if we know the id
-    });
+    setForm({ ...EMPTY_FORM });
     setFormOpen(true);
   };
 
@@ -329,7 +303,7 @@ export default function TasksPage() {
       status: t.status,
       category: t.category,
       location: t.location || "",
-assignedTo: t.assignedTo || "",
+      assignedTo: t.assignedTo || "",
       assigneeIds: (t.assignees || []).map((a: any) => a.userId),
       dueAt: t.dueAt ? toDateTimeLocal(new Date(t.dueAt)) : "",
     });
@@ -381,6 +355,82 @@ assignedTo: t.assignedTo || "",
     setTimeout(() => setToast(null), 3000);
   };
 
+  // --- Bulk selection ---
+  const toggleSelect = (id: string) => {
+    setSelectedIds((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const bulkReassign = async (userId: string) => {
+    if (!userId || selectedIds.size === 0) return;
+    setBulkWorking(true);
+    const ids = Array.from(selectedIds);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/tasks/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ assignedTo: userId, assigneeIds: [userId] }),
+          })
+        )
+      );
+      await loadTasks();
+      clearSelection();
+      flashToast(`Reassigned ${ids.length} task${ids.length === 1 ? "" : "s"}`, "success");
+    } catch {
+      flashToast("Some tasks failed to reassign", "error");
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const bulkStatusChange = async (status: string) => {
+    if (!status || selectedIds.size === 0) return;
+    setBulkWorking(true);
+    const ids = Array.from(selectedIds);
+    try {
+      await Promise.all(
+        ids.map((id) =>
+          fetch(`/api/tasks/${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status }),
+          })
+        )
+      );
+      await loadTasks();
+      clearSelection();
+      flashToast(`Updated ${ids.length} task${ids.length === 1 ? "" : "s"}`, "success");
+    } catch {
+      flashToast("Some tasks failed to update", "error");
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
+  const bulkDelete = async () => {
+    if (selectedIds.size === 0 || !isAdmin) return;
+    if (!confirm(`Delete ${selectedIds.size} selected task(s) permanently?`)) return;
+    setBulkWorking(true);
+    const ids = Array.from(selectedIds);
+    try {
+      await Promise.all(ids.map((id) => fetch(`/api/tasks/${id}`, { method: "DELETE" })));
+      setTasks((cur) => cur.filter((t) => !selectedIds.has(t.id)));
+      clearSelection();
+      flashToast(`Deleted ${ids.length} task${ids.length === 1 ? "" : "s"}`, "success");
+    } catch {
+      flashToast("Some tasks failed to delete", "error");
+    } finally {
+      setBulkWorking(false);
+    }
+  };
+
   const activeFilterCount = statusFilter.length + priorityFilter.length + categoryFilter.length;
 
   return (
@@ -397,7 +447,7 @@ assignedTo: t.assignedTo || "",
           </h1>
           <p className="text-slate-500 mt-1.5 text-sm">
             {filtered.length} {filtered.length === 1 ? "task" : "tasks"}
-            {activeFilterCount > 0 && <span className="text-indigo-600"> Â· {activeFilterCount} filters active</span>}
+            {activeFilterCount > 0 && <span className="text-indigo-600"> · {activeFilterCount} filters active</span>}
           </p>
         </div>
         {isSupervisorOrAbove && (
@@ -418,7 +468,7 @@ assignedTo: t.assignedTo || "",
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search tasks, locations, assigneesâ€¦"
+            placeholder="Search tasks, locations, assignees…"
             className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white"
           />
         </div>
@@ -476,11 +526,67 @@ assignedTo: t.assignedTo || "",
         </div>
       )}
 
+      {/* Bulk action bar */}
+      {isSupervisorOrAbove && selectedIds.size > 0 && (
+        <div className="sticky top-2 z-30 bg-slate-900 text-white rounded-xl shadow-lg p-3 mb-5 flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 text-sm font-medium pl-1">
+            <UsersBulkIcon className="w-4 h-4" />
+            {selectedIds.size} selected
+          </div>
+          <select
+            disabled={bulkWorking}
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) bulkReassign(e.target.value);
+              e.target.value = "";
+            }}
+            className="px-2.5 py-1.5 text-sm rounded-lg bg-slate-800 border border-slate-700 text-white disabled:opacity-50"
+          >
+            <option value="" disabled>Reassign to…</option>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </select>
+          <select
+            disabled={bulkWorking}
+            defaultValue=""
+            onChange={(e) => {
+              if (e.target.value) bulkStatusChange(e.target.value);
+              e.target.value = "";
+            }}
+            className="px-2.5 py-1.5 text-sm rounded-lg bg-slate-800 border border-slate-700 text-white disabled:opacity-50"
+          >
+            <option value="" disabled>Change status…</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>{STATUS_STYLES[s].label}</option>
+            ))}
+          </select>
+          {isAdmin && (
+            <button
+              onClick={bulkDelete}
+              disabled={bulkWorking}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-sm rounded-lg bg-rose-600 hover:bg-rose-500 disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </button>
+          )}
+          {bulkWorking && <Loader2 className="w-4 h-4 animate-spin" />}
+          <button
+            onClick={clearSelection}
+            className="ml-auto text-sm text-slate-300 hover:text-white flex items-center gap-1"
+          >
+            <X className="w-3.5 h-3.5" />
+            Clear
+          </button>
+        </div>
+      )}
+
       {/* Content */}
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 flex flex-col items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
-          <div className="text-sm text-slate-500">Loading tasksâ€¦</div>
+          <div className="text-sm text-slate-500">Loading tasks…</div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
@@ -523,6 +629,9 @@ assignedTo: t.assignedTo || "",
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
+              selectable={isSupervisorOrAbove}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
             />
           )}
           {grouped.inProgress.length > 0 && (
@@ -541,6 +650,9 @@ assignedTo: t.assignedTo || "",
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
+              selectable={isSupervisorOrAbove}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
             />
           )}
           {grouped.open.length > 0 && (
@@ -559,6 +671,9 @@ assignedTo: t.assignedTo || "",
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
+              selectable={isSupervisorOrAbove}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
             />
           )}
           {grouped.completed.length > 0 && (
@@ -577,6 +692,9 @@ assignedTo: t.assignedTo || "",
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
+              selectable={isSupervisorOrAbove}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
             />
           )}
           {grouped.cancelled.length > 0 && (
@@ -595,6 +713,9 @@ assignedTo: t.assignedTo || "",
               canDelete={isAdmin}
               canManage={isSupervisorOrAbove}
               onToast={flashToast}
+              selectable={isSupervisorOrAbove}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
             />
           )}
         </div>
@@ -651,6 +772,9 @@ function Section({
   canDelete,
   canManage = false,
   onToast = () => {},
+  selectable = false,
+  selectedIds,
+  onToggleSelect,
 }: {
   title: string;
   icon: React.ReactNode;
@@ -662,10 +786,13 @@ function Section({
   seenPending: Set<string>;
   onEdit: (t: Task) => void;
   onDelete: (id: string) => void;
-canEdit: (t: Task) => boolean;
+  canEdit: (t: Task) => boolean;
   canDelete: boolean;
   canManage?: boolean;
   onToast?: (msg: string, type: "success" | "error") => void;
+  selectable?: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
 }) {
   const sorted = [...items].sort((a, b) => {
     const prio = { critical: 0, high: 1, medium: 2, low: 3 };
@@ -696,10 +823,13 @@ canEdit: (t: Task) => boolean;
             seenPending={seenPending.has(t.id)}
             onEdit={onEdit}
             onDelete={onDelete}
-canEdit={canEdit(t)}
+            canEdit={canEdit(t)}
             canDelete={canDelete}
             canManage={canManage}
             onToast={onToast}
+            selectable={selectable}
+            selected={selectedIds.has(t.id)}
+            onToggleSelect={onToggleSelect}
           />
         ))}
       </div>
@@ -718,6 +848,9 @@ function TaskCard({
   canDelete,
   canManage,
   onToast,
+  selectable = false,
+  selected = false,
+  onToggleSelect,
 }: {
   task: Task;
   onQuickCycle: (t: Task) => void;
@@ -729,6 +862,9 @@ function TaskCard({
   canDelete: boolean;
   canManage: boolean;
   onToast: (msg: string, type: "success" | "error") => void;
+  selectable?: boolean;
+  selected?: boolean;
+  onToggleSelect?: (id: string) => void;
 }) {
   const due = task.dueAt ? new Date(task.dueAt) : null;
   const overdue = due && isPast(due) && task.status !== "completed" && task.status !== "cancelled";
@@ -739,8 +875,16 @@ function TaskCard({
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className="px-5 py-4 hover:bg-slate-50/60 transition-colors group">
+    <div className={`px-5 py-4 hover:bg-slate-50/60 transition-colors group ${selected ? "bg-indigo-50/50" : ""}`}>
       <div className="flex items-start gap-4">
+        {selectable && (
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect?.(task.id)}
+            className="mt-1.5 accent-[#F64F0C] w-4 h-4 flex-shrink-0"
+          />
+        )}
         {/* Priority stripe */}
         <div
           className={`w-1 self-stretch rounded-full flex-shrink-0 ${
@@ -758,7 +902,7 @@ function TaskCard({
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-<h3
+                <h3
                   onClick={() => setExpanded((e) => !e)}
                   className={`font-medium text-slate-900 cursor-pointer hover:text-[#F64F0C] ${task.status === "completed" ? "line-through text-slate-500" : ""}`}
                 >
@@ -780,7 +924,7 @@ function TaskCard({
                 )}
               </div>
 
-{task.description && !expanded && (
+              {task.description && !expanded && (
                 <p className="text-sm text-slate-600 line-clamp-2 mb-2">{task.description}</p>
               )}
               {expanded && (
@@ -795,7 +939,7 @@ function TaskCard({
                         {task.assignees.map((a) => (
                           <span key={a.userId} className="inline-flex items-center gap-1 text-xs bg-slate-100 rounded px-2 py-0.5">
                             <UserIcon className="w-3 h-3" />
-                            {a.name}{a.title ? ` Â· ${a.title}` : ""}
+                            {a.name}{a.title ? ` · ${a.title}` : ""}
                           </span>
                         ))}
                       </div>
@@ -909,7 +1053,7 @@ function TaskFormModal({
   onSubmit,
   onClose,
   editing,
-users,
+  users,
   canAssign,
   floors,
 }: {
@@ -919,7 +1063,7 @@ users,
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
   editing: boolean;
-    users: { id: string; name: string; title: string; role: string }[];
+  users: { id: string; name: string; title: string; role: string }[];
   canAssign: boolean;
   floors: string[];
 }) {
@@ -958,7 +1102,7 @@ users,
                 rows={3}
                 value={form.description}
                 onChange={(e) => up("description", e.target.value)}
-                placeholder="Add context, instructions, relevant detailsâ€¦"
+                placeholder="Add context, instructions, relevant detail…"
                 className="mt-1.5 w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
               />
             </div>
@@ -1057,7 +1201,7 @@ users,
                         }}
                         className="accent-[#F64F0C]"
                       />
-                      <span>{u.name} Â· {u.title}</span>
+                      <span>{u.name} · {u.title}</span>
                     </label>
                   );
                 })}
@@ -1132,4 +1276,3 @@ function toDateTimeLocal(d: Date) {
     d.getMinutes()
   )}`;
 }
-
