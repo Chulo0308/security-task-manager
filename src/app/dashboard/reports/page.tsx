@@ -1,8 +1,8 @@
 ﻿"use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   BarChart3, Loader2, TrendingUp, Eye, Award, Megaphone, Download,
-  ListChecks, CheckCircle2, AlertTriangle,
+  ListChecks, CheckCircle2, AlertTriangle, Bookmark, Trash2,
 } from "lucide-react";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
@@ -161,6 +161,13 @@ function DonutCard({ title, icon, data }: { title: string; icon?: React.ReactNod
   );
 }
 
+type SavedReport = { id: string; name: string; fromDate: string; toDate: string; createdAt: string; createdByName: string | null };
+
+function formatUKShort(iso: string) {
+  const d = new Date(iso + "T00:00:00");
+  return `${String(d.getDate()).padStart(2, "0")}-${String(d.getMonth() + 1).padStart(2, "0")}-${d.getFullYear()}`;
+}
+
 export default function ReportsPage() {
   const [from, setFrom] = useState(monthAgoStr());
   const [to, setTo] = useState(todayStr());
@@ -169,6 +176,47 @@ export default function ReportsPage() {
   const [error, setError] = useState("");
   const [exporting, setExporting] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
+  const [showSaveForm, setShowSaveForm] = useState(false);
+  const [saveName, setSaveName] = useState("");
+  const [savingReport, setSavingReport] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/reports/saved", { cache: "no-store" })
+      .then((r) => r.json())
+      .then((d) => setSavedReports(d.reports || []))
+      .catch(() => {});
+  }, []);
+
+  const saveCurrentReport = async () => {
+    if (!saveName.trim()) return;
+    setSavingReport(true);
+    try {
+      const res = await fetch("/api/reports/saved", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: saveName.trim(), fromDate: from, toDate: to }),
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setSavedReports((cur) => [d.report, ...cur]);
+        setSaveName("");
+        setShowSaveForm(false);
+      }
+    } finally {
+      setSavingReport(false);
+    }
+  };
+
+  const loadSavedReport = (r: SavedReport) => {
+    setFrom(r.fromDate);
+    setTo(r.toDate);
+  };
+
+  const deleteSavedReport = async (id: string) => {
+    setSavedReports((cur) => cur.filter((r) => r.id !== id));
+    await fetch(`/api/reports/saved/${id}`, { method: "DELETE" }).catch(() => {});
+  };
 
   const generate = async () => {
     setLoading(true);
@@ -268,14 +316,63 @@ export default function ReportsPage() {
           {loading ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null}
           Generate report
         </button>
-        {data && (
+                {data && (
           <button onClick={exportPdf} disabled={exporting}
             className="btn-brand sheen-wrap px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-60 flex items-center gap-2">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             {exporting ? "Exporting…" : "Export PDF"}
           </button>
         )}
+        <button onClick={() => setShowSaveForm((s) => !s)}
+          className="px-4 py-2 rounded-lg font-medium text-sm border border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center gap-2">
+          <Bookmark className="w-4 h-4" />
+          Save this range
+        </button>
       </div>
+
+      {showSaveForm && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-6 flex flex-wrap items-center gap-3">
+          <input
+            value={saveName}
+            onChange={(e) => setSaveName(e.target.value)}
+            placeholder="e.g. Monthly ops review"
+            className="flex-1 min-w-[200px] px-3 py-2 border border-slate-200 rounded-lg text-sm focus-brand"
+          />
+          <button onClick={saveCurrentReport} disabled={savingReport || !saveName.trim()}
+            className="btn-brand px-4 py-2 rounded-lg font-medium text-sm disabled:opacity-60">
+            {savingReport ? "Saving…" : "Save"}
+          </button>
+          <button onClick={() => { setShowSaveForm(false); setSaveName(""); }}
+            className="px-3 py-2 text-sm text-slate-500 hover:text-slate-700">
+            Cancel
+          </button>
+        </div>
+      )}
+
+      {savedReports.length > 0 && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 mb-6">
+          <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Saved report ranges</div>
+          <div className="flex flex-wrap gap-2">
+            {savedReports.map((r) => (
+              <div key={r.id} className="flex items-center gap-1.5 bg-slate-50 rounded-lg pl-3 pr-1.5 py-1.5">
+                <button
+                  onClick={() => loadSavedReport(r)}
+                  className="text-sm text-slate-700 hover:text-[#F64F0C] font-medium"
+                  title={`${formatUKShort(r.fromDate)} to ${formatUKShort(r.toDate)}`}
+                >
+                  {r.name}
+                </button>
+                <button
+                  onClick={() => deleteSavedReport(r.id)}
+                  className="p-1 rounded text-slate-300 hover:text-rose-600 hover:bg-rose-50"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="mb-6 px-4 py-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-sm">{error}</div>
