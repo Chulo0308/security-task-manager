@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { attachments, reminders, tasks, taskSeen, taskAssignees, users } from "@/db/schema";
 import { eq, desc, asc, and, inArray, or, sql, ilike } from "drizzle-orm";
 import { getSession, isSupervisorOrAbove } from "@/lib/auth";
 import { sendPushToUsers } from "@/lib/push";
+import { logActivity } from "@/lib/activity";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -141,7 +142,6 @@ export async function GET(req: NextRequest) {
         .innerJoin(users, eq(taskAssignees.userId, users.id))
         .where(inArray(taskAssignees.taskId, taskIds))
     : [];
-  console.log("DEBUG assigneeRows count:", assigneeRows.length, "taskIds count:", taskIds.length);
   const assigneesByTask = new Map<string, typeof assigneeRows>();
   for (const a of assigneeRows) {
     const cur = assigneesByTask.get(a.taskId) ?? [];
@@ -227,6 +227,14 @@ export async function POST(req: NextRequest) {
       }).catch(() => {});
     }
   }
+
+  logActivity({
+    actorId: session.id,
+    action: "created",
+    resourceType: "task",
+    resourceId: row.id,
+    resourceTitle: row.title,
+  }).catch(() => {});
 
   return NextResponse.json({ task: row }, { status: 201 });
 }

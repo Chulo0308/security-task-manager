@@ -235,3 +235,22 @@ export const pushSubscriptions = pgTable(
   },
   (t) => [index("push_subscriptions_user_idx").on(t.userId)]
 );
+export const activityLog = pgTable(
+  "activity_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorId: uuid("actor_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    action: varchar("action", { length: 60 }).notNull(),
+    resourceType: varchar("resource_type", { length: 30 }).notNull(),
+    resourceId: uuid("resource_id"),
+    resourceTitle: varchar("resource_title", { length: 300 }),
+    details: text("details"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("activity_log_created_idx").on(t.createdAt),
+    index("activity_log_actor_idx").on(t.actorId),
+  ]
+);
