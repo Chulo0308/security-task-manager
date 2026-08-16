@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -25,7 +25,11 @@ function LoginForm() {
   const [showDemo, setShowDemo] = useState(true);
   const [mode, setMode] = useState<"loading" | "setup" | "login">("loading");
   const [siteName, setSiteName] = useState("8 Bishopsgate");
-  const [siteLocation, setSiteLocation] = useState("London · EC2N 4AY");
+  const [twoFactorChallenge, setTwoFactorChallenge] = useState<string | null>(null);
+  const [twoFactorCode, setTwoFactorCode] = useState("");
+  const [twoFactorError, setTwoFactorError] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [siteLocation, setSiteLocation] = useState("London Â· EC2N 4AY");
 
   useEffect(() => {
     // Determine whether this is a live deployment or needs first-run setup
@@ -54,7 +58,7 @@ function LoginForm() {
       .then((r) => r.json())
       .then((d) => {
         if (d.siteName) setSiteName(d.siteName);
-        if (d.postcode || d.city) setSiteLocation([d.city, d.postcode].filter(Boolean).join(" · "));
+        if (d.postcode || d.city) setSiteLocation([d.city, d.postcode].filter(Boolean).join(" Â· "));
       })
       .catch(() => {});
   }, []);
@@ -72,6 +76,10 @@ function LoginForm() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Login failed");
+        return;
+      }
+      if (data.requiresTwoFactor) {
+        setTwoFactorChallenge(data.challenge);
         return;
       }
       await refresh();
@@ -107,9 +115,71 @@ function LoginForm() {
 
   const next = searchParams.get("next") || "/dashboard";
 
+  const handleVerify2fa = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (twoFactorCode.trim().length !== 6 || !twoFactorChallenge) return;
+    setVerifying(true);
+    setTwoFactorError("");
+    try {
+      const res = await fetch("/api/auth/login/verify-2fa", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ challenge: twoFactorChallenge, code: twoFactorCode.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTwoFactorError(data.error || "Incorrect code");
+        return;
+      }
+      await refresh();
+      router.replace("/dashboard");
+    } catch {
+      setTwoFactorError("Network error");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  if (twoFactorChallenge) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 p-4">
+        <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-2xl p-6">
+          <h1 className="text-lg font-semibold mb-1">Two-factor authentication</h1>
+          <p className="text-sm text-slate-400 mb-4">
+            Enter the 6-digit code from your authenticator app.
+          </p>
+          <form onSubmit={handleVerify2fa} className="space-y-3">
+            <input
+              autoFocus
+              value={twoFactorCode}
+              onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              placeholder="123456"
+              className="w-full px-3 py-2.5 bg-slate-800 border border-slate-700 rounded-lg text-sm tracking-widest text-center font-mono focus:outline-none focus:ring-2 focus:ring-[#F64F0C]/40"
+            />
+            {twoFactorError && <div className="text-xs text-rose-400">{twoFactorError}</div>}
+            <button
+              type="submit"
+              disabled={verifying || twoFactorCode.length !== 6}
+              className="w-full px-4 py-2.5 bg-[#F64F0C] text-white rounded-lg text-sm font-medium disabled:opacity-50"
+            >
+              {verifying ? "Verifying…" : "Verify"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setTwoFactorChallenge(null); setTwoFactorCode(""); setTwoFactorError(""); }}
+              className="w-full text-xs text-slate-400 hover:text-slate-200"
+            >
+              Back to login
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-slate-950 text-slate-100">
-      {/* Left panel – branding */}
+      {/* Left panel â€“ branding */}
       <div className="relative lg:w-[45%] flex flex-col justify-between p-8 lg:p-12 brand-hero overflow-hidden">
         <div className="absolute inset-0 opacity-30 pointer-events-none"
              style={{
@@ -144,11 +214,11 @@ function LoginForm() {
         </div>
 
         <div className="relative z-10 text-xs text-slate-500">
-          © {new Date().getFullYear()} 8 Bishopsgate Security Operations · City of London
+          Â© {new Date().getFullYear()} 8 Bishopsgate Security Operations Â· City of London
         </div>
       </div>
 
-      {/* Right panel – form */}
+      {/* Right panel â€“ form */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-slate-50 text-slate-900">
         <div className="w-full max-w-md">
           {mode === "setup" && (
@@ -157,7 +227,7 @@ function LoginForm() {
           {mode === "loading" && (
             <div className="flex items-center gap-3 text-slate-500">
               <Loader2 className="w-5 h-5 animate-spin" />
-              Preparing…
+              Preparingâ€¦
             </div>
           )}
           {mode === "login" && (<>
@@ -187,7 +257,7 @@ function LoginForm() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
+                placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                 className="mt-1.5 w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
               />
             </div>
@@ -249,7 +319,7 @@ function LoginForm() {
                       </div>
                       <RoleBadge role={a.role} />
                     </div>
-                    <div className="text-xs text-slate-400 mt-1 font-mono">{a.email} · {a.password}</div>
+                    <div className="text-xs text-slate-400 mt-1 font-mono">{a.email} Â· {a.password}</div>
                   </button>
                 ))}
                 {demoAccounts.length > 0 && (
@@ -312,7 +382,7 @@ function SetupForm({ onDone }: { onDone: () => Promise<void> | void }) {
         </div>
         <h2 className="text-2xl font-semibold tracking-tight">Create the administrator account</h2>
         <p className="text-slate-500 mt-1 text-sm">
-          This is a live deployment. Set up the Security Operations Manager account — further staff
+          This is a live deployment. Set up the Security Operations Manager account â€” further staff
           accounts are added later by the administrator from the Team page.
         </p>
       </div>
@@ -432,8 +502,10 @@ function LoadingShell() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50">
       <div className="flex flex-col items-center gap-3">
         <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
-        <div className="text-sm text-slate-500">Loading…</div>
+        <div className="text-sm text-slate-500">Loadingâ€¦</div>
       </div>
     </div>
   );
 }
+
+
