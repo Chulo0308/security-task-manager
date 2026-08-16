@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatDistanceToNow, isPast } from "date-fns";
@@ -69,6 +69,12 @@ const PRIORITY_CARD: Record<string, string> = {
   critical: "border-rose-300 bg-gradient-to-br from-rose-50 to-white",
   urgent: "border-amber-300 bg-gradient-to-br from-amber-50 to-white",
   normal: "border-slate-200 bg-white",
+};
+
+const SEVERITY_GLOW: Record<string, string> = {
+  critical: "glow-severity-red",
+  urgent: "glow-severity-amber",
+  normal: "glow-severity-green",
 };
 
 export default function AnnouncementsPage() {
@@ -300,7 +306,7 @@ export default function AnnouncementsPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search announcements…"
+            placeholder="Search announcementsâ€¦"
             className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white"
           />
         </div>
@@ -343,7 +349,7 @@ export default function AnnouncementsPage() {
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 flex flex-col items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
-          <div className="text-sm text-slate-500">Loading announcements…</div>
+          <div className="text-sm text-slate-500">Loading announcementsâ€¦</div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
@@ -504,7 +510,7 @@ const [expanded, setExpanded] = useState(false);
 
   return (
     <div
-      className={`rounded-2xl border p-5 shadow-sm transition-shadow hover:shadow-md ${PRIORITY_CARD[a.priority]} ${
+      className={`shine-once rounded-2xl border p-5 shadow-sm transition-shadow hover:shadow-md ${PRIORITY_CARD[a.priority]} ${SEVERITY_GLOW[a.priority] || ""} ${
         expired ? "opacity-60" : ""
       }`}
     >
@@ -568,11 +574,11 @@ const [expanded, setExpanded] = useState(false);
               <div className="flex items-center gap-3 mt-3 text-xs text-slate-500">
                 <span className="font-medium text-slate-700">{a.authorName}</span>
                 <span className="text-slate-400">{a.authorTitle}</span>
-                <span>·</span>
+                <span>Â·</span>
                 <span>{formatDistanceToNow(new Date(a.createdAt), { addSuffix: true })}</span>
                 {a.expiresAt && !expired && (
                   <>
-                    <span>·</span>
+                    <span>Â·</span>
                     <span>
                       Expires {formatDistanceToNow(new Date(a.expiresAt), { addSuffix: true })}
                     </span>
@@ -700,7 +706,7 @@ function AnnouncementFormModal({
                 rows={6}
                 value={form.body}
                 onChange={(e) => up("body", e.target.value)}
-                placeholder="Share the details with the team…"
+                placeholder="Share the details with the teamâ€¦"
                 className="mt-1.5 w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
               />
             </div>
@@ -786,3 +792,4 @@ function toDateTimeLocal(d: Date) {
     d.getMinutes()
   )}`;
 }
+
