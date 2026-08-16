@@ -111,7 +111,8 @@ export const todos = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     title: varchar("title", { length: 300 }).notNull(),
-    done: boolean("done").notNull().default(false),
+        done: boolean("done").notNull().default(false),
+    priority: varchar("priority", { length: 20 }).notNull().default("medium"),
     dueAt: timestamp("due_at"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
