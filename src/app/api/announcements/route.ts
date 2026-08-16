@@ -4,6 +4,7 @@ import { announcements, announcementSeen, attachments, reminders, users } from "
 import { eq, desc, asc, and, or, ilike, inArray } from "drizzle-orm";
 import { getSession, isSupervisorOrAbove } from "@/lib/auth";
 import { sendPushToUsers } from "@/lib/push";
+import { logActivity } from "@/lib/activity";
 
 export async function GET(req: NextRequest) {
   const session = await getSession();
@@ -162,6 +163,14 @@ export async function POST(req: NextRequest) {
       tag: `announcement-${row.id}`,
     }).catch(() => {});
   }
+
+  logActivity({
+    actorId: session.id,
+    action: "created",
+    resourceType: "announcement",
+    resourceId: row.id,
+    resourceTitle: row.title,
+  }).catch(() => {});
 
   return NextResponse.json({ announcement: row }, { status: 201 });
 }
