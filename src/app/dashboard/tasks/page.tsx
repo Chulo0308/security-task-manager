@@ -56,6 +56,16 @@ type Task = {
   assignees?: { userId: string; name: string; title: string; role: string }[];
 };
 
+type Template = {
+  id: string;
+  name: string;
+  title: string;
+  description: string;
+  priority: string;
+  category: string;
+  location: string | null;
+};
+
 type FormState = {
   title: string;
   description: string;
@@ -117,6 +127,7 @@ const STATUS_STYLES: Record<string, { label: string; cls: string; dot: string }>
 export default function TasksPage() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [floors, setFloors] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string[]>([]);
@@ -150,6 +161,11 @@ export default function TasksPage() {
     if (sRes.ok) {
       const sData = await sRes.json();
       setFloors((sData.floors || []).map((f: any) => f.name));
+    }
+    const tRes = await fetch("/api/task-templates", { cache: "no-store" });
+    if (tRes.ok) {
+      const tData = await tRes.json();
+      setTemplates(tData.templates || []);
     }
     setLoading(false);
   };
@@ -764,6 +780,9 @@ export default function TasksPage() {
           users={users}
           canAssign={isSupervisorOrAbove}
           floors={floors}
+          templates={templates}
+          isAdmin={isAdmin}
+          onTemplatesChange={setTemplates}
         />
       )}
 
@@ -1100,6 +1119,9 @@ function TaskFormModal({
   users,
   canAssign,
   floors,
+  templates,
+  isAdmin,
+  onTemplatesChange,
 }: {
   form: FormState;
   setForm: (f: FormState) => void;
@@ -1110,8 +1132,13 @@ function TaskFormModal({
   users: { id: string; name: string; title: string; role: string }[];
   canAssign: boolean;
   floors: string[];
+  templates: Template[];
+  isAdmin: boolean;
+  onTemplatesChange: (t: Template[]) => void;
 }) {
   const up = (k: keyof FormState, v: string) => setForm({ ...form, [k]: v });
+  const [showTemplateManager, setShowTemplateManager] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8 border border-slate-200">
@@ -1130,6 +1157,98 @@ function TaskFormModal({
           </div>
 
           <div className="p-6 space-y-4">
+            {templates.length > 0 && (
+              <div>
+                <label className="text-xs font-medium text-slate-700 uppercase tracking-wide">Start from template</label>
+                <select
+                  defaultValue=""
+                  onChange={(e) => {
+                    const t = templates.find((x) => x.id === e.target.value);
+                    if (t) {
+                      setForm({
+                        ...form,
+                        title: t.title,
+                        description: t.description,
+                        priority: t.priority,
+                        category: t.category,
+                        location: t.location || "",
+                      });
+                    }
+                    e.target.value = "";
+                  }}
+                  className="mt-1.5 w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="">Choose a template…</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            {isAdmin && (
+              <div className="border border-dashed border-slate-200 rounded-lg p-3">
+                <button
+                  type="button"
+                  onClick={() => setShowTemplateManager((s) => !s)}
+                  className="text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                >
+                  {showTemplateManager ? "Hide template manager" : "Manage templates"}
+                </button>
+                {showTemplateManager && (
+                  <div className="mt-3 space-y-2">
+                    {templates.map((t) => (
+                      <div key={t.id} className="flex items-center justify-between text-sm bg-slate-50 rounded px-2.5 py-1.5">
+                        <span>{t.name}</span>
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            await fetch(`/api/task-templates/${t.id}`, { method: "DELETE" });
+                            onTemplatesChange(templates.filter((x) => x.id !== t.id));
+                          }}
+                          className="text-slate-400 hover:text-rose-600"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex items-center gap-2 pt-1">
+                      <input
+                        value={newTemplateName}
+                        onChange={(e) => setNewTemplateName(e.target.value)}
+                        placeholder="Template name"
+                        className="flex-1 px-2.5 py-1.5 text-sm border border-slate-200 rounded"
+                      />
+                      <button
+                        type="button"
+                        disabled={!newTemplateName.trim() || !form.title.trim()}
+                        onClick={async () => {
+                          const res = await fetch("/api/task-templates", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              name: newTemplateName.trim(),
+                              title: form.title,
+                              description: form.description,
+                              priority: form.priority,
+                              category: form.category,
+                              location: form.location,
+                            }),
+                          });
+                          if (res.ok) {
+                            const data = await res.json();
+                            onTemplatesChange([data.template, ...templates]);
+                            setNewTemplateName("");
+                          }
+                        }}
+                        className="px-3 py-1.5 text-xs font-medium bg-slate-900 text-white rounded disabled:opacity-50"
+                      >
+                        Save as template
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
             <div>
               <label className="text-xs font-medium text-slate-700 uppercase tracking-wide">Title</label>
               <input
@@ -1320,6 +1439,9 @@ function toDateTimeLocal(d: Date) {
     d.getMinutes()
   )}`;
 }
+
+
+
 
 
 
