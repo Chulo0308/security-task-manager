@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { tasks, users, taskAssignees } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { getSession, isAdmin } from "@/lib/auth";
+import { logActivity } from "@/lib/activity";
 
 async function canModifyTask(sessionId: string, isSessionAdmin: boolean, task: { createdBy: string; assignedTo: string | null }, taskId: string) {
   if (isSessionAdmin) return true;
@@ -73,6 +74,16 @@ export async function PUT(
     .where(eq(tasks.id, id))
     .returning();
   if (!row) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const becameCompleted = body.status === "completed" && existing.status !== "completed";
+  logActivity({
+    actorId: session.id,
+    action: becameCompleted ? "completed" : "updated",
+    resourceType: "task",
+    resourceId: row.id,
+    resourceTitle: row.title,
+  }).catch(() => {});
+
   return NextResponse.json({ task: row });
 }
 
@@ -93,5 +104,14 @@ export async function DELETE(
   }
 
   await db.delete(tasks).where(eq(tasks.id, id));
+
+  logActivity({
+    actorId: session.id,
+    action: "deleted",
+    resourceType: "task",
+    resourceId: existing.id,
+    resourceTitle: existing.title,
+  }).catch(() => {});
+
   return NextResponse.json({ ok: true });
 }
