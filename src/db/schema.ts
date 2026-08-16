@@ -13,6 +13,8 @@ import {
 export const users = pgTable(
   "users",
   {
+    totpSecret: text("totp_secret"),
+    totpEnabled: boolean("totp_enabled").notNull().default(false),
     id: uuid("id").defaultRandom().primaryKey(),
     name: varchar("name", { length: 200 }).notNull(),
     email: varchar("email", { length: 255 }).notNull().unique(),
