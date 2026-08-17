@@ -1,6 +1,7 @@
 ﻿"use client";
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X, Send, Loader2, ShieldCheck } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 type Msg = { role: "user" | "assistant"; text: string };
 
@@ -55,13 +56,17 @@ export function VigilWidget() {
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
-                  className={`max-w-[85%] px-3 py-2 rounded-xl text-sm whitespace-pre-wrap ${
+                  className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
                     m.role === "user"
-                      ? "bg-[#F64F0C] text-white rounded-br-sm"
-                      : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm"
+                      ? "bg-[#F64F0C] text-white rounded-br-sm whitespace-pre-wrap"
+                      : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm vigil-markdown"
                   }`}
                 >
-                  {m.text}
+                  {m.role === "assistant" ? (
+                    <ReactMarkdown>{m.text}</ReactMarkdown>
+                  ) : (
+                    m.text
+                  )}
                 </div>
               </div>
             ))}
@@ -102,3 +107,4 @@ export function VigilWidget() {
     </>
   );
 }
+
