@@ -1,4 +1,4 @@
-// Edge-compatible session helpers (no Node crypto, no bcrypt)
+﻿// Edge-compatible session helpers (no Node crypto, no bcrypt)
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 
@@ -17,14 +17,16 @@ export type SessionUser = {
   role: UserRole;
   title: string;
   site: string;
+  sid?: string;
 };
 
-export async function signSession(user: Omit<SessionUser, "site" | "title">) {
+export async function signSession(user: Omit<SessionUser, "site" | "title" | "sid">, sid: string) {
   return new SignJWT({
     sub: user.id,
     email: user.email,
     role: user.role,
     name: user.name,
+    sid,
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
@@ -33,7 +35,9 @@ export async function signSession(user: Omit<SessionUser, "site" | "title">) {
 }
 
 // Decode JWT without DB lookup (fast, edge-compatible)
-export async function decodeSession(token: string): Promise<Omit<SessionUser, "site" | "title"> | null> {
+export async function decodeSession(
+  token: string
+): Promise<(Omit<SessionUser, "site" | "title" | "sid"> & { sid?: string }) | null> {
   try {
     const { payload } = await jwtVerify(token, SECRET);
     return {
@@ -41,14 +45,15 @@ export async function decodeSession(token: string): Promise<Omit<SessionUser, "s
       email: payload.email as string,
       role: payload.role as UserRole,
       name: payload.name as string,
+      sid: (payload.sid as string) || undefined,
     };
   } catch {
     return null;
   }
 }
 
-export async function setSessionCookie(user: Omit<SessionUser, "site" | "title">) {
-  const token = await signSession(user);
+export async function setSessionCookie(user: Omit<SessionUser, "site" | "title" | "sid">, sid: string) {
+  const token = await signSession(user, sid);
   const cookieStore = await cookies();
   cookieStore.set({
     name: COOKIE_NAME,

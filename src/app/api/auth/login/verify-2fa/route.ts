@@ -4,6 +4,7 @@ import { users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { setSessionCookie } from "@/lib/auth";
 import { verifyTwoFactorChallenge, verifyTotpCode } from "@/lib/twofa";
+import { createSession } from "@/lib/sessions";
 
 export async function POST(req: NextRequest) {
   try {
@@ -33,7 +34,8 @@ export async function POST(req: NextRequest) {
       title: user.title,
       site: user.site,
     };
-    await setSessionCookie(sessionUser);
+    const sid = await createSession(user.id, req);
+    await setSessionCookie(sessionUser, sid);
     return NextResponse.json({ user: sessionUser });
   } catch (e) {
     return NextResponse.json({ error: "Server error", detail: String(e) }, { status: 500 });

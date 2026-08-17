@@ -1,6 +1,6 @@
-// Node-compatible auth helpers (includes bcrypt + DB)
+﻿// Node-compatible auth helpers (includes bcrypt + DB)
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, sessions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import {
@@ -45,6 +45,28 @@ export async function getSession(): Promise<SessionUser | null> {
       .limit(1);
     if (!row || !row.active) return null;
 
+    // If this token carries a session id, confirm that session hasn't
+    // been revoked. Tokens without a sid (issued before this feature)
+    // are treated as valid for backward compatibility.
+    if (base.sid) {
+      const [sessionRow] = await db
+        .select({ id: sessions.id, lastActiveAt: sessions.lastActiveAt })
+        .from(sessions)
+        .where(eq(sessions.id, base.sid))
+        .limit(1);
+      if (!sessionRow) return null;
+
+      const staleSession =
+        Date.now() - new Date(sessionRow.lastActiveAt).getTime() > 60_000;
+      if (staleSession) {
+        db.update(sessions)
+          .set({ lastActiveAt: new Date() })
+          .where(eq(sessions.id, base.sid))
+          .then(() => undefined)
+          .catch(() => undefined);
+      }
+    }
+
     // Presence heartbeat (throttled to once per minute)
     const stale =
       !row.lastSeenAt || Date.now() - new Date(row.lastSeenAt).getTime() > 60_000;
@@ -63,6 +85,7 @@ export async function getSession(): Promise<SessionUser | null> {
       role: row.role as UserRole,
       title: row.title,
       site: row.site,
+      sid: base.sid,
     };
   } catch {
     // If DB not reachable, fall back to token payload (for middleware)
@@ -73,6 +96,7 @@ export async function getSession(): Promise<SessionUser | null> {
       role: base.role,
       title: "",
       site: "8 Bishopsgate",
+      sid: base.sid,
     };
   }
 }

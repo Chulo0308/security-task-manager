@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { eq, count } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { hashPassword, setSessionCookie } from "@/lib/auth";
 import { DEMO_USERS } from "@/lib/seed";
+import { createSession } from "@/lib/sessions";
 
 const DEMO_EMAILS = new Set(DEMO_USERS.map((u) => u.email.toLowerCase()));
 
@@ -79,7 +80,8 @@ export async function POST(req: NextRequest) {
       title: row.title,
       site: row.site,
     };
-    await setSessionCookie(sessionUser);
+    const sid = await createSession(row.id, req);
+    await setSessionCookie(sessionUser, sid);
 
     return NextResponse.json({ user: sessionUser }, { status: 201 });
   } catch (e: any) {
