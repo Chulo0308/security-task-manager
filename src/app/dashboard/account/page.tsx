@@ -1,10 +1,37 @@
 ﻿"use client";
 import { useEffect, useState } from "react";
-import { ShieldCheck, ShieldOff, Loader2, Copy, Check } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
+import { ShieldCheck, ShieldOff, Loader2, Copy, Check, Monitor, MapPin, X } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
 
+type SessionRow = {
+  id: string;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: string;
+  lastActiveAt: string;
+};
+
+function parseDevice(ua: string | null) {
+  if (!ua) return "Unknown device";
+  let browser = "Unknown browser";
+  if (/Edg\//.test(ua)) browser = "Edge";
+  else if (/Chrome\//.test(ua) && !/Chromium/.test(ua)) browser = "Chrome";
+  else if (/Firefox\//.test(ua)) browser = "Firefox";
+  else if (/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = "Safari";
+  let os = "";
+  if (/Windows/.test(ua)) os = "Windows";
+  else if (/Mac OS X/.test(ua)) os = "macOS";
+  else if (/Android/.test(ua)) os = "Android";
+  else if (/iPhone|iPad/.test(ua)) os = "iOS";
+  else if (/Linux/.test(ua)) os = "Linux";
+  return os ? `${browser} on ${os}` : browser;
+}
+
 export default function AccountPage() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const router = useRouter();
   const [enabled, setEnabled] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -19,6 +46,11 @@ export default function AccountPage() {
   const [disabling, setDisabling] = useState(false);
   const [showDisableForm, setShowDisableForm] = useState(false);
 
+  const [sessionsList, setSessionsList] = useState<SessionRow[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
   const loadStatus = async () => {
     const res = await fetch("/api/auth/2fa/status", { cache: "no-store" });
     const data = await res.json();
@@ -26,8 +58,17 @@ export default function AccountPage() {
     setLoading(false);
   };
 
+  const loadSessions = async () => {
+    const res = await fetch("/api/sessions", { cache: "no-store" });
+    const data = await res.json();
+    setSessionsList(data.sessions || []);
+    setCurrentSessionId(data.currentSessionId || null);
+    setSessionsLoading(false);
+  };
+
   useEffect(() => {
     loadStatus();
+    loadSessions();
   }, []);
 
   const startSetup = async () => {
@@ -91,6 +132,21 @@ export default function AccountPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const revokeSession = async (id: string) => {
+    setRevokingId(id);
+    try {
+      await fetch(`/api/sessions/${id}`, { method: "DELETE" });
+      if (id === currentSessionId) {
+        await logout();
+        router.push("/login");
+        return;
+      }
+      setSessionsList((cur) => cur.filter((s) => s.id !== id));
+    } finally {
+      setRevokingId(null);
+    }
+  };
+
   return (
     <div className="max-w-2xl mx-auto px-4 lg:px-8 py-6 lg:py-10">
       <div className="mb-6">
@@ -101,7 +157,7 @@ export default function AccountPage() {
         </p>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-6">
         <h2 className="font-semibold text-slate-900 mb-1">Two-factor authentication</h2>
         <p className="text-sm text-slate-500 mb-4">
           Add an extra layer of security using an authenticator app (e.g. Google Authenticator, Authy).
@@ -199,6 +255,52 @@ export default function AccountPage() {
             >
               Enable two-factor authentication
             </button>
+          </div>
+        )}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <h2 className="font-semibold text-slate-900 mb-1">Active sessions</h2>
+        <p className="text-sm text-slate-500 mb-4">
+          Devices currently signed in to your account. Revoke any you don't recognise.
+        </p>
+
+        {sessionsLoading ? (
+          <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+        ) : sessionsList.length === 0 ? (
+          <div className="text-sm text-slate-500">No active sessions found.</div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {sessionsList.map((s) => (
+              <div key={s.id} className="py-3 flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 text-sm font-medium text-slate-900">
+                    <Monitor className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                    {parseDevice(s.userAgent)}
+                    {s.id === currentSessionId && (
+                      <span className="text-[10px] uppercase tracking-wide font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        this device
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+                    <span className="inline-flex items-center gap-1">
+                      <MapPin className="w-3 h-3" />
+                      {s.ipAddress || "Unknown location"}
+                    </span>
+                    <span>Active {formatDistanceToNow(new Date(s.lastActiveAt), { addSuffix: true })}</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => revokeSession(s.id)}
+                  disabled={revokingId === s.id}
+                  className="p-1.5 rounded-md text-slate-300 hover:text-rose-600 hover:bg-rose-50 disabled:opacity-50 flex-shrink-0"
+                  title="Revoke"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </div>
