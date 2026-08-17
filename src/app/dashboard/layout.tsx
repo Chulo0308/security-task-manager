@@ -23,6 +23,7 @@ import {
 import { AuthProvider, useAuth, useRole } from "@/components/AuthProvider";
 import { NotificationToggle } from "@/components/NotificationToggle";
 import { GlobalSearch } from "@/components/GlobalSearch";
+import { VigilWidget } from "@/components/VigilWidget";
 import { useRouter } from "next/navigation";
 
 type NavItem = {
@@ -207,6 +208,7 @@ function DashboardShell({ children }: { children: ReactNode }) {
         </div>
 <main className="flex-1 min-w-0">{children}</main>
         <Watermark />
+        <VigilWidget />
       </div>
     </div>
   );
@@ -263,5 +265,6 @@ function Watermark() {
     </div>
   );
 }
+
 
 
