@@ -12,7 +12,7 @@ export async function askAssistant(systemPrompt: string, userMessage: string): P
   }
   try {
     const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       contents: [{ role: "user", parts: [{ text: userMessage }] }],
       config: {
         systemInstruction: systemPrompt,
@@ -25,3 +25,4 @@ export async function askAssistant(systemPrompt: string, userMessage: string): P
     return "Vigil is having trouble responding right now — please try again shortly.";
   }
 }
+
