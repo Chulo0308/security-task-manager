@@ -319,6 +319,9 @@ export default function UsersPage() {
         </div>
       )}
 
+      {sessionsUserId && isAdmin && (
+        <UserSessionsPanel userId={sessionsUserId} onClose={() => setSessionsUserId(null)} />
+      )}
       {/* Form modal */}
       {formOpen && isAdmin && (
         <UserFormModal
@@ -683,5 +686,6 @@ function UserSessionsPanel({ userId, onClose }: { userId: string; onClose: () =>
     </div>
   );
 }
+
 
 
