@@ -280,3 +280,17 @@ export const taskTemplates = pgTable("task_templates", {
     .references(() => users.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    userAgent: text("user_agent"),
+    ipAddress: varchar("ip_address", { length: 64 }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    lastActiveAt: timestamp("last_active_at").notNull().defaultNow(),
+  },
+  (t) => [index("sessions_user_idx").on(t.userId)]
+);
