@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import {
@@ -54,7 +54,7 @@ const EMPTY: FormState = {
 };
 
 const ROLES = [
-  { value: "admin", label: "Administrator (Ops Manager)" },
+  { value: "admin", label: "Administrator" },
   { value: "supervisor", label: "Supervisor" },
   { value: "operator", label: "Operator (CCTV/Control)" },
   { value: "guard", label: "Security Officer" },
@@ -229,10 +229,10 @@ export default function UsersPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <MiniStat icon={<UsersIcon className="w-4 h-4" />} label="Total" value={loading ? "—" : stats.total} />
-        <MiniStat icon={<UserCheck className="w-4 h-4" />} label="Active" value={loading ? "—" : stats.active} />
-        <MiniStat icon={<ShieldCheck className="w-4 h-4" />} label="Supervisors" value={loading ? "—" : stats.supervisors} />
-        <MiniStat icon={<AlertTriangle className="w-4 h-4" />} label="Admins" value={loading ? "—" : stats.admins} />
+        <MiniStat icon={<UsersIcon className="w-4 h-4" />} label="Total" value={loading ? "â€”" : stats.total} />
+        <MiniStat icon={<UserCheck className="w-4 h-4" />} label="Active" value={loading ? "â€”" : stats.active} />
+        <MiniStat icon={<ShieldCheck className="w-4 h-4" />} label="Supervisors" value={loading ? "â€”" : stats.supervisors} />
+        <MiniStat icon={<AlertTriangle className="w-4 h-4" />} label="Admins" value={loading ? "â€”" : stats.admins} />
       </div>
 
       {/* Filter bar */}
@@ -242,7 +242,7 @@ export default function UsersPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search team members…"
+            placeholder="Search team membersâ€¦"
             className="w-full pl-9 pr-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent focus:bg-white"
           />
         </div>
@@ -274,7 +274,7 @@ export default function UsersPage() {
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 flex flex-col items-center gap-3">
           <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
-          <div className="text-sm text-slate-500">Loading team…</div>
+          <div className="text-sm text-slate-500">Loading teamâ€¦</div>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center">
@@ -296,7 +296,7 @@ export default function UsersPage() {
                   <span className={`text-xs font-bold uppercase tracking-wide px-2 py-1 rounded border ${ROLE_STYLES[role]}`}>
                     {label}
                   </span>
-                  <span className="text-xs text-slate-500">· {list.length} members</span>
+                  <span className="text-xs text-slate-500">Â· {list.length} members</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {list.map((u) => (
@@ -503,7 +503,7 @@ function UserFormModal({
                 required={!editing}
                 value={form.password}
                 onChange={(e) => up("password", e.target.value)}
-                placeholder={editing ? "••••••••" : "Set a password"}
+                placeholder={editing ? "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" : "Set a password"}
                 className="mt-1.5 w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
@@ -600,3 +600,4 @@ function MiniStat({
     </div>
   );
 }
+
