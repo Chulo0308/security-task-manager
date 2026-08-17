@@ -122,4 +122,26 @@
   border-radius: 4px;
   font-size: 0.85em;
 }
+@keyframes vigil-reply-in {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+    box-shadow: 0 0 0 rgba(31, 56, 100, 0);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    box-shadow: 0 0 16px -3px rgba(31, 56, 100, 0.35), 0 0 0 1px rgba(31, 56, 100, 0.1);
+  }
+}
+.vigil-reply-bubble {
+  animation: vigil-reply-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 
+@media (prefers-reduced-motion: reduce) {
+  .vigil-reply-bubble { animation: none !important; box-shadow: 0 0 0 1px rgba(31, 56, 100, 0.1); }
+}

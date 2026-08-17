@@ -59,7 +59,7 @@ export function VigilWidget() {
                   className={`max-w-[85%] px-3 py-2 rounded-xl text-sm ${
                     m.role === "user"
                       ? "bg-[#F64F0C] text-white rounded-br-sm whitespace-pre-wrap"
-                      : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm vigil-markdown"
+                      : "bg-white border border-slate-200 text-slate-800 rounded-bl-sm vigil-markdown vigil-reply-bubble"
                   }`}
                 >
                   {m.role === "assistant" ? (
@@ -107,4 +107,5 @@ export function VigilWidget() {
     </>
   );
 }
+
 
